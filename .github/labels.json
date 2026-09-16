@@ -1,0 +1,22 @@
+[
+  {"name":"area: issueops","color":"1d76db","description":"Issue commands and assignment lifecycle"},
+  {"name":"area: pull-requests","color":"5319e7","description":"Pull request operations and review queues"},
+  {"name":"area: triage","color":"0e8a16","description":"Issue intake, classification and duplicate handling"},
+  {"name":"area: policy","color":"fbca04","description":"RepoOps configuration, policy and validation"},
+  {"name":"area: github-api","color":"006b75","description":"GitHub API integration, pagination and rate limits"},
+  {"name":"area: automation","color":"0052cc","description":"GitHub Actions, schedules and workflow orchestration"},
+  {"name":"area: events","color":"7057ff","description":"Operational events, timelines and audit history"},
+  {"name":"area: security","color":"b60205","description":"Permissions, authorization and abuse resistance"},
+  {"name":"area: developer-experience","color":"bfdadc","description":"CLI, simulator, fixtures and local tooling"},
+  {"name":"area: observability","color":"c2e0c6","description":"Logs, metrics and repository health reporting"},
+  {"name":"area: docs","color":"0075ca","description":"Documentation and examples"},
+  {"name":"area: platform","color":"3e4b9e","description":"GitHub App, persistence, workers and multi-repo platform"},
+  {"name":"difficulty: starter","color":"c5def5","description":"Narrowly scoped contribution with established architecture"},
+  {"name":"difficulty: intermediate","color":"f9d0c4","description":"Requires understanding multiple modules or GitHub behavior"},
+  {"name":"difficulty: advanced","color":"d93f0b","description":"Security, concurrency, auth, persistence or architecture work"},
+  {"name":"status: ready","color":"0e8a16","description":"Scoped and available for contribution"},
+  {"name":"status: in-progress","color":"1d76db","description":"Issue currently claimed by a contributor"},
+  {"name":"status: blocked","color":"b60205","description":"Work cannot progress until a dependency or decision is resolved"},
+  {"name":"status: needs-design","color":"fbca04","description":"Requires maintainer design before implementation"},
+  {"name":"status: needs-review","color":"5319e7","description":"Implementation exists and is awaiting review"}
+]
