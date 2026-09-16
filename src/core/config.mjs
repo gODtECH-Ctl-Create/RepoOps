@@ -3,14 +3,32 @@ import { readFile } from "node:fs/promises";
 export const DEFAULT_CONFIG = Object.freeze({
   commands: Object.freeze({ claim: true, unclaim: true }),
   labels: Object.freeze({ inProgress: "status: in-progress", ready: "status: ready" }),
-  assignments: Object.freeze({ reminderAfterDays: 3, expireAfterDays: 7, autoRelease: false })
+  assignments: Object.freeze({ reminderAfterDays: 3, expireAfterDays: 7, autoRelease: false }),
+  contributorGuidance: Object.freeze({
+    enabled: true,
+    requirements: "",
+    setupCommand: "",
+    checkCommand: "",
+    contributingUrl: "",
+    developmentUrl: "",
+    architectureUrl: ""
+  })
 });
 
-const allowedSections = new Set(["commands", "labels", "assignments"]);
+const allowedSections = new Set(["commands", "labels", "assignments", "contributorGuidance"]);
 const allowedKeys = {
   commands: new Set(["claim", "unclaim"]),
   labels: new Set(["inProgress", "ready"]),
-  assignments: new Set(["reminderAfterDays", "expireAfterDays", "autoRelease"])
+  assignments: new Set(["reminderAfterDays", "expireAfterDays", "autoRelease"]),
+  contributorGuidance: new Set([
+    "enabled",
+    "requirements",
+    "setupCommand",
+    "checkCommand",
+    "contributingUrl",
+    "developmentUrl",
+    "architectureUrl"
+  ])
 };
 
 function parseScalar(value, numeric = false) {
@@ -24,11 +42,35 @@ function parseScalar(value, numeric = false) {
   return trimmed;
 }
 
+function validateGuidanceString(key, value) {
+  if (typeof value !== "string" || value !== value.trim()) {
+    throw new Error(`contributorGuidance.${key} must be a trimmed string`);
+  }
+  if (value.includes("`")) {
+    throw new Error(`contributorGuidance.${key} must not contain backticks`);
+  }
+}
+
+function validateGuidanceUrl(key, value) {
+  validateGuidanceString(key, value);
+  if (!value) return;
+  let parsed;
+  try {
+    parsed = new URL(value);
+  } catch {
+    throw new Error(`contributorGuidance.${key} must be an absolute https URL`);
+  }
+  if (parsed.protocol !== "https:") {
+    throw new Error(`contributorGuidance.${key} must be an absolute https URL`);
+  }
+}
+
 export function parseRepoOpsConfig(text = "") {
   const result = {
     commands: { ...DEFAULT_CONFIG.commands },
     labels: { ...DEFAULT_CONFIG.labels },
-    assignments: { ...DEFAULT_CONFIG.assignments }
+    assignments: { ...DEFAULT_CONFIG.assignments },
+    contributorGuidance: { ...DEFAULT_CONFIG.contributorGuidance }
   };
 
   let section = null;
@@ -81,6 +123,16 @@ export function parseRepoOpsConfig(text = "") {
   if (result.assignments.expireAfterDays <= result.assignments.reminderAfterDays) throw new Error("expireAfterDays must exceed reminderAfterDays");
   if (typeof result.assignments.autoRelease !== "boolean") throw new Error("assignments.autoRelease must be true or false");
 
+  if (typeof result.contributorGuidance.enabled !== "boolean") {
+    throw new Error("contributorGuidance.enabled must be true or false");
+  }
+  for (const key of ["requirements", "setupCommand", "checkCommand"]) {
+    validateGuidanceString(key, result.contributorGuidance[key]);
+  }
+  for (const key of ["contributingUrl", "developmentUrl", "architectureUrl"]) {
+    validateGuidanceUrl(key, result.contributorGuidance[key]);
+  }
+
   return result;
 }
 
@@ -92,7 +144,8 @@ export async function loadRepoOpsConfig(path = ".repoops.yml") {
       return {
         commands: { ...DEFAULT_CONFIG.commands },
         labels: { ...DEFAULT_CONFIG.labels },
-    assignments: { ...DEFAULT_CONFIG.assignments }
+        assignments: { ...DEFAULT_CONFIG.assignments },
+        contributorGuidance: { ...DEFAULT_CONFIG.contributorGuidance }
       };
     }
     throw error;
