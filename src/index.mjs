@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { decideClaim } from "./core/claim.mjs";
 import { routeCommand } from "./core/commands.mjs";
 import { loadRepoOpsConfig } from "./core/config.mjs";
-import { buildClaimConfirmation } from "./core/contributor-guidance.mjs";
+import { buildClaimConfirmation, buildCommentGuidance, commentGuidanceMarker } from "./core/contributor-guidance.mjs";
 import { isAvailable, workflowTransition } from "./core/workflow-state.mjs";
 import { decideUnclaim } from "./core/unclaim.mjs";
 import { executeOperation, operationKey } from "./core/idempotency.mjs";
@@ -23,14 +23,38 @@ function eventNameFor(event) {
   return "unknown";
 }
 
+function labelNames(labels = []) {
+  return labels.map((label) => typeof label === "string" ? label : label.name).filter(Boolean);
+}
+
 export async function handleIssueComment(event, client, config) {
   if (event.action !== "created" || event.issue?.pull_request) return;
-  const routed = routeCommand(event.comment?.body ?? "", config);
-  if (routed.type === "ignore") return;
-  const key = operationKey({ repositoryId: event.repository?.id, issueId: event.issue?.id, event: "issue_comment", action: "created", sourceId: event.comment?.id });
+  if (event.comment?.user?.type && event.comment.user.type !== "User") return;
+
   const actor = event.comment?.user?.login;
-  if (!actor || !Number.isSafeInteger(event.comment?.user?.id)) throw new Error("Malformed comment actor");
+  const actorId = event.comment?.user?.id;
+  if (!actor || !Number.isSafeInteger(actorId)) throw new Error("Malformed comment actor");
   const issueNumber = event.issue.number;
+  const routed = routeCommand(event.comment?.body ?? "", config);
+
+  if (routed.type === "ignore") {
+    if (routed.reason !== "not-command") return;
+    const issue = await client.getIssue(issueNumber);
+    if (issue.id !== event.issue.id || issue.pull_request || issue.state !== "open") return;
+    const names = labelNames(issue.labels);
+    const explicitlyReady = names.includes(config.labels.ready);
+    if (issue.assignees.length || !explicitlyReady || !isAvailable(issue.labels)) return;
+
+    const message = buildCommentGuidance({ guidance: config.contributorGuidance });
+    if (!message) return;
+    const marker = commentGuidanceMarker(actorId);
+    const existing = await client.listComments(issueNumber);
+    if (existing.some((comment) => client.isOwnComment(comment) && comment.body.includes(marker))) return;
+    await client.addComment(issueNumber, `${message}\n\n${marker}`);
+    return;
+  }
+
+  const key = operationKey({ repositoryId: event.repository?.id, issueId: event.issue?.id, event: "issue_comment", action: "created", sourceId: event.comment?.id });
   return executeOperation({
     key, store: commentOperationStore(client, issueNumber),
     prepare: async () => {
