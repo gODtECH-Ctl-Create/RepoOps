@@ -115,3 +115,13 @@ Release/versioning expectations are documented in [docs/releases.md](docs/releas
 ## License
 
 MIT
+
+## Assignment safety and reminders
+
+Claims transition ready → in-progress; unclaim restores ready when work is open
+and available, and close clears active states. Repeated deliveries use authenticated
+operation receipts. Scheduled reminders consider bot-authored assignment age and
+explicit implementation PR links; they never automatically release work.
+
+See [assignment configuration](docs/configuration.md), [retry recovery](docs/idempotency.md),
+and [scanner operation and live validation](docs/stale-assignments.md).

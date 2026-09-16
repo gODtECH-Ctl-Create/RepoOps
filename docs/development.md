@@ -49,7 +49,7 @@ For command logic, construct event-like input and assert the returned decision. 
 
 ## Adding a command
 
-Until the dispatcher lands, new command work should still follow these boundaries:
+Command work follows the existing dispatcher and these boundaries:
 
 - parse the command explicitly
 - place business rules in `src/core`
@@ -95,3 +95,8 @@ A contribution is normally complete when:
 - documentation is updated when user-visible behavior changes
 - workflow/security impact is explained
 - no unrelated changes are included
+## Scanner validation
+
+Use the Stale assignment reminders workflow in dry-run mode for existing issues,
+or live_validation for a disposable issue and real reminder/retry checks. See
+[the validation procedure](stale-assignments.md). Pure tests use fixed UTC clocks.

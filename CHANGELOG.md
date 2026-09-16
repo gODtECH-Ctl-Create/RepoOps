@@ -8,6 +8,8 @@ The format follows Keep a Changelog-style categories and the project intends to 
 
 ### Added
 
+- Scheduled, non-destructive stale-assignment reminders using assignment timeline evidence and linked PRs, with per-window receipts and disposable live validation.
+
 - Paginated explicit linked-PR detection, normalized open/merged/closed results, and read-only live inspection.
 
 - Validated assignment reminder/expiry policy with non-destructive defaults.
@@ -23,6 +25,8 @@ The format follows Keep a Changelog-style categories and the project intends to 
 - contributor, architecture, development, security, and command documentation
 
 ### Changed
+
+- Commands and scanner share a bounded repository mutation queue to prevent overlapping writes.
 
 - Claim/unclaim now transition ready/in-progress coherently; close clears both active labels.
 

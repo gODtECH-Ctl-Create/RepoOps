@@ -1,0 +1,77 @@
+name: Stale assignment reminders
+
+on:
+  schedule:
+    - cron: '17 9 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Report decisions without posting reminders
+        type: boolean
+        default: true
+      issue_number:
+        description: Optional single issue number
+        type: string
+      live_validation:
+        description: Create and clean a disposable issue to test fresh/stale/retry behavior
+        type: boolean
+        default: false
+  push:
+    branches: [main]
+    paths:
+      - 'src/core/stale-assignment.mjs'
+      - 'src/github/stale-scanner.mjs'
+      - 'scripts/scan-stale-assignments.mjs'
+      - 'scripts/validate-stale-scanner.mjs'
+      - '.github/workflows/stale-assignments.yml'
+
+permissions: {}
+
+jobs:
+  scan:
+    if: github.event_name != 'push' && !inputs.live_validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+    concurrency:
+      group: repoops-mutations-${{ github.repository }}
+      cancel-in-progress: false
+      queue: max
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/scan-stale-assignments.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOOPS_DRY_RUN: ${{ github.event_name == 'schedule' && 'false' || inputs.dry_run && 'true' || 'false' }}
+          REPOOPS_ISSUE_NUMBER: ${{ inputs.issue_number }}
+  validate:
+    if: github.event_name == 'push' || inputs.live_validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+    concurrency:
+      group: repoops-mutations-${{ github.repository }}
+      cancel-in-progress: false
+      queue: max
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Read-only repository scan
+        run: node scripts/scan-stale-assignments.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOOPS_DRY_RUN: 'true'
+      - run: node scripts/validate-stale-scanner.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
