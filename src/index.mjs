@@ -9,7 +9,9 @@ import { isAvailable, workflowTransition } from "./core/workflow-state.mjs";
 import { decideUnclaim } from "./core/unclaim.mjs";
 import { executeOperation, operationKey } from "./core/idempotency.mjs";
 import { listManagedActiveAssignments } from "./github/active-work.mjs";
+import { findClosingIssuesForPullRequest } from "./github/closing-issues.mjs";
 import { commentOperationStore, issueMutationSteps } from "./github/operations.mjs";
+import { postMergeFollowUpForIssue } from "./github/post-merge.mjs";
 import { GitHubClient } from "./github/client.mjs";
 
 async function readEvent() {
@@ -21,6 +23,7 @@ async function readEvent() {
 function eventNameFor(event) {
   if (process.env.GITHUB_EVENT_NAME) return process.env.GITHUB_EVENT_NAME;
   if (event.comment) return "issue_comment";
+  if (event.pull_request && event.action) return "pull_request_target";
   if (event.issue && event.action) return "issues";
   return "unknown";
 }
@@ -125,22 +128,39 @@ export async function handleIssueLifecycle(event, client, config) {
     if (current.state !== "closed") return;
     if (current.labels.some((l) => (typeof l === "string" ? l : l.name) === label)) await client.removeLabel(event.issue.number, label);
   }
+  return postMergeFollowUpForIssue({ client, config, issueNumber: event.issue.number });
+}
+
+export async function handlePullRequestLifecycle(event, client, config) {
+  if (event.action !== "closed" || event.pull_request?.merged !== true || !Number.isSafeInteger(event.pull_request?.number)) return;
+  const closingIssues = await findClosingIssuesForPullRequest(client, event.pull_request.number);
+  const results = [];
+  for (const linked of closingIssues) {
+    if (linked.repository !== client.repository) continue;
+    results.push(await postMergeFollowUpForIssue({
+      client,
+      config,
+      issueNumber: linked.number,
+      pullRequestNumber: event.pull_request.number
+    }));
+  }
+  return results;
 }
 
 export async function runRepoOps(event, { token, repository } = {}) {
   const config = await loadRepoOpsConfig();
   const eventName = eventNameFor(event);
 
-  if (!event.issue?.number) {
-    console.log("RepoOps: no issue found in event; nothing to do.");
-    return;
-  }
-
   const client = new GitHubClient({
     token: token ?? process.env.GITHUB_TOKEN,
     repository: repository ?? process.env.GITHUB_REPOSITORY
   });
 
+  if (eventName === "pull_request_target" || eventName === "pull_request") return handlePullRequestLifecycle(event, client, config);
+  if (!event.issue?.number) {
+    console.log("RepoOps: no issue found in event; nothing to do.");
+    return;
+  }
   if (eventName === "issue_comment") return handleIssueComment(event, client, config);
   if (eventName === "issues") return handleIssueLifecycle(event, client, config);
 
