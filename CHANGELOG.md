@@ -8,6 +8,8 @@ The format follows a Keep a Changelog-style categories and the project intends t
 
 ### Added
 
+- Configurable contributor active-work limits for RepoOps-managed issue assignments, with paginated discovery, maintainer exemption, and explicit at-limit guidance.
+
 - Deterministic completed-contribution history projection from operational events and authoritative linked-PR relationships, including conservative first/returning/unknown contributor classification.
 
 - One-time contributor guidance on ordinary comments for explicitly ready issues, directing contributors to `/claim` and configured problem/upgrade proposal routes without inferring ownership from natural language.
