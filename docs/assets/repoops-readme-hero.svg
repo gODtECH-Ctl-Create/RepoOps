@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="360" viewBox="0 0 1200 360" role="img" aria-labelledby="title desc">
+  <title id="title">RepoOps repository operations banner</title>
+  <desc id="desc">Animated developer-tool banner showing a GitHub event flowing through a RepoOps decision into a safe repository action.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#07111f"/>
+      <stop offset="0.55" stop-color="#0b1b2f"/>
+      <stop offset="1" stop-color="#11152b"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#64e8ff"/>
+      <stop offset="1" stop-color="#9c8cff"/>
+    </linearGradient>
+    <linearGradient id="soft" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#64e8ff" stop-opacity=".18"/>
+      <stop offset="1" stop-color="#9c8cff" stop-opacity=".08"/>
+    </linearGradient>
+    <pattern id="grid" width="38" height="38" patternUnits="userSpaceOnUse">
+      <path d="M38 0H0V38" fill="none" stroke="#8edfff" stroke-opacity=".065" stroke-width="1"/>
+    </pattern>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="7" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <style>
+      .flow { stroke-dasharray: 9 12; animation: dash 5.5s linear infinite; }
+      .pulse { transform-box: fill-box; transform-origin: center; animation: pulse 2.8s ease-in-out infinite; }
+      .pulse2 { animation-delay: .9s; }
+      .pulse3 { animation-delay: 1.8s; }
+      .scan { animation: scan 5.5s ease-in-out infinite; }
+      .blink { animation: blink 1.4s step-end infinite; }
+      @keyframes dash { to { stroke-dashoffset: -84; } }
+      @keyframes pulse { 0%,100% { opacity:.62; transform:scale(.92);} 50% {opacity:1; transform:scale(1.08);} }
+      @keyframes scan { 0%,100% { transform:translateX(-120px); opacity:0;} 15%,85%{opacity:.23;} 50%{transform:translateX(1180px); opacity:.12;} }
+      @keyframes blink { 0%,55% {opacity:1;} 56%,100% {opacity:.2;} }
+      @media (prefers-reduced-motion: reduce) {
+        .flow,.pulse,.scan,.blink { animation:none !important; }
+      }
+    </style>
+  </defs>
+
+  <rect width="1200" height="360" rx="28" fill="url(#bg)"/>
+  <rect width="1200" height="360" rx="28" fill="url(#grid)"/>
+  <circle cx="110" cy="58" r="120" fill="#14c8e7" opacity=".07"/>
+  <circle cx="1080" cy="65" r="150" fill="#9c8cff" opacity=".08"/>
+  <rect class="scan" x="-120" y="0" width="120" height="360" fill="url(#soft)"/>
+
+  <g transform="translate(54 47)">
+    <rect width="58" height="58" rx="16" fill="#0f263d" stroke="#64e8ff" stroke-opacity=".45"/>
+    <text x="29" y="39" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="27" font-weight="800" fill="#64e8ff">R&gt;</text>
+    <text x="78" y="27" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="31" font-weight="800" fill="#eff8ff">RepoOps</text>
+    <text x="78" y="52" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="14" font-weight="600" fill="#9fb3c8" letter-spacing="1.6">REPOSITORY OPERATIONS CONTROL LAYER</text>
+  </g>
+
+  <text x="54" y="148" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="40" font-weight="800" fill="#eff8ff">Keep GitHub work moving — safely.</text>
+  <text x="54" y="178" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="16" fill="#9fb3c8">Events become deterministic decisions. Decisions become explicit repository actions.</text>
+
+  <g transform="translate(54 219)">
+    <rect width="275" height="74" rx="17" fill="#0c1a2d" stroke="#64e8ff" stroke-opacity=".26"/>
+    <circle class="pulse" cx="34" cy="37" r="8" fill="#68e0a5" filter="url(#glow)"/>
+    <text x="56" y="31" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="13" font-weight="700" fill="#64e8ff">GITHUB EVENT</text>
+    <text x="56" y="51" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="13" fill="#a8bdd0">issue · comment · PR · schedule</text>
+
+    <path class="flow" d="M291 37 H405" fill="none" stroke="url(#accent)" stroke-width="3" stroke-linecap="round"/>
+    <path d="M398 29 L410 37 L398 45" fill="none" stroke="#8edfff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <rect x="424" width="275" height="74" rx="17" fill="#0c1a2d" stroke="#9c8cff" stroke-opacity=".28"/>
+    <circle class="pulse pulse2" cx="458" cy="37" r="8" fill="#64e8ff" filter="url(#glow)"/>
+    <text x="480" y="31" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="13" font-weight="700" fill="#9c8cff">REPOOPS DECISION</text>
+    <text x="480" y="51" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="13" fill="#a8bdd0">command · policy · lifecycle</text>
+
+    <path class="flow" d="M715 37 H829" fill="none" stroke="url(#accent)" stroke-width="3" stroke-linecap="round"/>
+    <path d="M822 29 L834 37 L822 45" fill="none" stroke="#a99cff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <rect x="848" width="294" height="74" rx="17" fill="#0c1a2d" stroke="#68e0a5" stroke-opacity=".25"/>
+    <circle class="pulse pulse3" cx="882" cy="37" r="8" fill="#68e0a5" filter="url(#glow)"/>
+    <text x="904" y="31" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="13" font-weight="700" fill="#68e0a5">SAFE ACTION</text>
+    <text x="904" y="51" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="13" fill="#a8bdd0">assign · label · comment · queue</text>
+  </g>
+
+  <g transform="translate(54 320)">
+    <text x="0" y="0" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="12" fill="#68e0a5">✓ least privilege</text>
+    <text x="145" y="0" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="12" fill="#64e8ff">✓ deterministic</text>
+    <text x="284" y="0" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="12" fill="#9c8cff">✓ retry-safe</text>
+    <text x="400" y="0" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="12" fill="#f6c86e">✓ human-controlled</text>
+    <text class="blink" x="1115" y="0" text-anchor="end" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="12" fill="#64e8ff">● LIVE</text>
+  </g>
+</svg>
