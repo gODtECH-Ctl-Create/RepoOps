@@ -51,7 +51,7 @@ Actions → Stale assignment reminders → Run workflow:
   that issue in a finally block. The synthetic clock never applies to existing
   issues. Human actors must be assignable in the repository.
 
-The disposable live test also runs after a main-branch push changing scanner
+The disposable live test also runs after a `MASTER`-branch push changing scanner
 files. It needs only contents read, issues write and pull-requests read. It does
 not create branches or PRs. If cleanup fails, the run fails and logs the issue
 number for manual cleanup; canceled jobs cannot guarantee finally execution.

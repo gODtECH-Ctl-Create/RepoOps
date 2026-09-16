@@ -14,7 +14,7 @@ During the `0.x` phase the project is still stabilizing. Breaking changes may oc
 
 A release should not be cut unless:
 
-- CI passes on `main`
+- CI passes on `MASTER`
 - relevant tests cover the changed behavior
 - public behavior is documented
 - configuration changes are documented
