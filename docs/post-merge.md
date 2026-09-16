@@ -16,6 +16,16 @@ The first-contribution classification is deliberately conservative:
 
 A first completed contribution receives a distinct welcome with the completed issue/PR and configured contributor resources. Returning or unknown contributors receive a shorter completion acknowledgement.
 
+Post-merge messages reuse the existing `contributorGuidance` policy. Two optional HTTPS fields are specifically useful after completion:
+
+```yaml
+contributorGuidance:
+  contributorHubUrl: "https://example.com/contribute"
+  roadmapUrl: "https://example.com/roadmap"
+```
+
+Both fields default to empty strings and are display-only links. RepoOps itself points them at the public Contributor Hub and repository roadmap.
+
 Each issue/merged-PR pair has a stable bot-authored marker. Repeated issue-close and merged-PR deliveries therefore converge on one follow-up comment rather than producing duplicates.
 
 ## Next-work suggestions
