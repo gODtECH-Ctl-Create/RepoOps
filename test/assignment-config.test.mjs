@@ -11,6 +11,27 @@ test("reject invalid, contradictory and duplicate assignment policy", () => {
   for (const text of ['assignments:\n  reminderAfterDays: 7', 'assignments:\n  expireAfterDays: 2', 'assignments:\n  autoRelease: "false"', 'assignments:\n  reminderAfterDays: 2\n  reminderAfterDays: 3', 'assignments:\nassignments:', 'labels:\n  ready: "status: in-progress"']) assert.throws(() => parseRepoOpsConfig(text));
 });
 
+test("contributor active-work limits are disabled by default and validate explicit policy", () => {
+  assert.deepEqual(parseRepoOpsConfig("commands:\n  claim: true").contributorLimits, {
+    maxActiveAssignments: 0,
+    limitMaintainers: false
+  });
+
+  assert.deepEqual(parseRepoOpsConfig(`contributorLimits:
+  maxActiveAssignments: 2
+  limitMaintainers: true
+`).contributorLimits, {
+    maxActiveAssignments: 2,
+    limitMaintainers: true
+  });
+
+  for (const value of ["-1", "1.5", "true", '"2"', "101", "9007199254740992"]) {
+    assert.throws(() => parseRepoOpsConfig(`contributorLimits:\n  maxActiveAssignments: ${value}`));
+  }
+  assert.throws(() => parseRepoOpsConfig("contributorLimits:\n  limitMaintainers: yes"));
+  assert.throws(() => parseRepoOpsConfig("contributorLimits:\n  unknown: 1"));
+});
+
 test("parses contributor guidance without assuming project-specific commands", () => {
   const defaults = parseRepoOpsConfig("commands:\n  claim: true").contributorGuidance;
   assert.deepEqual(defaults, {
