@@ -109,3 +109,7 @@ for checkpoint semantics, ambiguous failures, and concurrency limits.
 `src/core/workflow-state.mjs` plans deterministic workflow-label transitions.
 The GitHub mutation layer checks fresh state and only changes absent/present labels
 when needed. Assignment reminder/expiry settings are policy, not release automation.
+
+`src/github/linked-pull-requests.mjs` collects explicit GitHub closing/manual PR
+relationships with cursor pagination. Its normalized read-only result is reusable
+by lifecycle policies and future PR queues. See [relationship rules](linked-pull-requests.md).

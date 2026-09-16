@@ -1,0 +1,33 @@
+name: Linked PR integration
+
+on:
+  pull_request:
+    paths:
+      - 'src/github/linked-pull-requests.mjs'
+      - '.github/workflows/linked-pr-integration.yml'
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: Issue number to inspect (read-only)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+jobs:
+  inspect:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Inspect explicit GitHub links
+        run: node scripts/inspect-linked-prs.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOOPS_ISSUE_NUMBER: ${{ inputs.issue_number || '9' }}

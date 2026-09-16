@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "test": "node --test",
-    "check:scripts": "node --check scripts/simulate.mjs && node --check scripts/sync-labels.mjs",
+    "check:scripts": "node --check scripts/simulate.mjs && node --check scripts/sync-labels.mjs && node --check scripts/inspect-linked-prs.mjs",
     "check": "npm run check:scripts && npm test",
     "simulate": "node scripts/simulate.mjs"
   },
