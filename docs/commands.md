@@ -1,6 +1,6 @@
 # RepoOps Commands
 
-RepoOps commands are comments that intentionally request repository operations.
+RepoOps commands are explicit issue comments that request repository operations.
 
 ## Implemented
 
@@ -13,7 +13,7 @@ Expected behavior:
 - ignore unrelated comments
 - refuse to replace an existing assignee
 - assign the commenter when the issue is available
-- ensure `status: in-progress` exists
+- ensure the configured in-progress label exists
 - apply the status label
 - post a confirmation comment
 
@@ -23,12 +23,27 @@ Example:
 /claim
 ```
 
+### `/unclaim`
+
+Releases the commenter's own assignment and returns the issue to available work.
+
+Expected behavior:
+- only act when the commenter is currently assigned
+- never remove another contributor's assignment
+- remove the configured in-progress label
+- post a confirmation comment
+
+Example:
+
+```text
+/unclaim
+```
+
+Both commands can be disabled through `.repoops.yml`.
+
 ## Planned
 
 These commands are roadmap items and are not implemented yet.
-
-### `/unclaim`
-Release the commenter's assignment and return the issue to available work.
 
 ### `/keep`
 Confirm continued ownership after an automated inactivity reminder.
@@ -48,5 +63,6 @@ New commands should:
 - not silently perform destructive actions
 - create an understandable audit trail
 - avoid interpreting arbitrary natural-language comments as commands
+- respect repository configuration and least-privilege permissions
 
 RepoOps should prefer explicit command syntax over guessing contributor intent.
