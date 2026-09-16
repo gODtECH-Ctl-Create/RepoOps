@@ -36,6 +36,7 @@ test("parses valid RepoOps configuration", () => {
       commands: { claim: true, unclaim: false },
       labels: { inProgress: "work: active", ready: "status: ready" },
       assignments: { reminderAfterDays: 3, expireAfterDays: 7, autoRelease: false },
+      contributorLimits: { maxActiveAssignments: 0, limitMaintainers: false },
       contributorGuidance: {
         enabled: true,
         requirements: "",
