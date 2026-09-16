@@ -18,6 +18,10 @@ assignments:
   expireAfterDays: 7
   autoRelease: false
 
+contributorLimits:
+  maxActiveAssignments: 0
+  limitMaintainers: false
+
 contributorGuidance:
   enabled: true
   requirements: "Node.js 20+ and Git"
@@ -68,6 +72,29 @@ explicitly configured. The scheduled scanner remains reminder-only. See [stale r
 `labels.ready` defaults to `status: ready`. It and `labels.inProgress` must be
 non-empty trimmed strings with distinct names (case-insensitive). Existing
 configurations receive these new defaults without requiring migration.
+
+## Contributor active-work limits
+
+`contributorLimits` optionally limits how many open RepoOps-managed issue assignments one contributor may hold at the same time.
+
+- `maxActiveAssignments` — integer from `0` through `100`. `0` disables the limit and is the global default.
+- `limitMaintainers` — boolean; defaults to `false`. When false, GitHub users whose comment association is `OWNER`, `MEMBER`, or `COLLABORATOR` are exempt from the contributor limit.
+
+Only assignments that RepoOps can prove it created are counted. The collector requires the issue to be open, carry the configured in-progress label, and have a current assignment timeline event authored by the RepoOps bot. Manual assignments are therefore not silently treated as RepoOps-managed work.
+
+Pull requests never count toward this limit. Candidate issue discovery uses the GitHub API through RepoOps' paginated client, then verifies each assignment against the issue timeline.
+
+When the configured limit is reached, `/claim` does not mutate ownership or labels. RepoOps replies with the contributor's currently active issue numbers and asks them to finish one or use `/unclaim` before claiming another.
+
+RepoOps itself configures:
+
+```yaml
+contributorLimits:
+  maxActiveAssignments: 2
+  limitMaintainers: false
+```
+
+This keeps the public contributor backlog from being hoarded while leaving maintainers free to coordinate repository work.
 
 ## Contributor guidance
 
@@ -123,9 +150,10 @@ The current parser also requires:
 
 - two-space indentation for values
 - no tabs
-- boolean values for command switches and `contributorGuidance.enabled`
+- boolean values for command switches, `contributorLimits.limitMaintainers`, and `contributorGuidance.enabled`
 - non-empty trimmed workflow label strings
 - bounded integer assignment windows
+- a contributor active-work limit from `0` through `100`
 - validated contributor-guidance strings and HTTPS documentation/proposal URLs
 
 When `.repoops.yml` is absent, RepoOps uses safe defaults.
