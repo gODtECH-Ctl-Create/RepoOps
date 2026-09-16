@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { DEFAULT_CONFIG } from "../src/core/config.mjs";
+import { postMergeMarker } from "../src/core/post-merge.mjs";
 import { postMergeFollowUpForIssue } from "../src/github/post-merge.mjs";
 
 function linkedResponse() {
@@ -27,22 +28,34 @@ function linkedResponse() {
   };
 }
 
-test("post-merge follow-up is duplicate-safe and suppresses suggestions at active-work limit", async () => {
+function fixture({ existingIssueFollowUp = false } = {}) {
   const botId = 41898282;
-  const comments = [];
+  const commentsByNumber = new Map([[23, []], [70, []]]);
+  if (existingIssueFollowUp) {
+    commentsByNumber.get(23).push({
+      id: 1,
+      body: `Existing detailed follow-up\n\n${postMergeMarker(230, 70)}`,
+      user: { id: botId, type: "Bot" }
+    });
+  }
+
   const issues = new Map([
     [23, { id: 230, number: 23, state: "closed", assignees: [], labels: [] }],
     [44, { id: 440, number: 44, state: "open", assignees: [{ login: "alice" }], labels: [{ name: "status: in-progress" }] }]
   ]);
+
   const client = {
     repository: "owner/repo",
     botId,
     getIssue: async (number) => structuredClone(issues.get(number)),
-    listComments: async () => structuredClone(comments),
+    listComments: async (number) => structuredClone(commentsByNumber.get(number) ?? []),
     isOwnComment: (comment) => comment.user?.id === botId && comment.user?.type === "Bot",
-    addComment: async (_number, body) => {
-      comments.push({ id: comments.length + 1, body, user: { id: botId, type: "Bot" } });
-      return structuredClone(comments.at(-1));
+    addComment: async (number, body) => {
+      const comments = commentsByNumber.get(number) ?? [];
+      const comment = { id: comments.length + 1, body, user: { id: botId, type: "Bot" } };
+      comments.push(comment);
+      commentsByNumber.set(number, comments);
+      return structuredClone(comment);
     },
     request: async (path) => {
       if (path === "/repos/owner/repo") return { id: 10, full_name: "owner/repo" };
@@ -93,14 +106,28 @@ test("post-merge follow-up is duplicate-safe and suppresses suggestions at activ
     contributorHubUrl: "https://example.com/contribute"
   };
 
+  return { client, config, commentsByNumber };
+}
+
+test("post-merge follow-up writes issue detail and merged PR acknowledgment exactly once", async () => {
+  const { client, config, commentsByNumber } = fixture();
+
   const first = await postMergeFollowUpForIssue({ client, config, issueNumber: 23, pullRequestNumber: 70 });
   assert.equal(first.type, "followed-up");
   assert.equal(first.contributor, "alice");
   assert.equal(first.contributionStatus, "first");
   assert.deepEqual(first.suggestions, []);
-  assert.equal(comments.length, 1);
-  assert.match(comments[0].body, /first merged contribution/i);
-  assert.doesNotMatch(comments[0].body, /Available work you can look at next/);
+  assert.equal(first.issueCommentAdded, true);
+  assert.equal(first.pullRequestCommentAdded, true);
+
+  const issueComments = commentsByNumber.get(23);
+  const pullRequestComments = commentsByNumber.get(70);
+  assert.equal(issueComments.length, 1);
+  assert.equal(pullRequestComments.length, 1);
+  assert.match(issueComments[0].body, /first merged contribution/i);
+  assert.doesNotMatch(issueComments[0].body, /Available work you can look at next/);
+  assert.match(pullRequestComments[0].body, /first contribution has been merged/i);
+  assert.match(pullRequestComments[0].body, /recorded on #23/i);
 
   const repeated = await postMergeFollowUpForIssue({ client, config, issueNumber: 23, pullRequestNumber: 70 });
   assert.deepEqual(repeated, {
@@ -109,5 +136,19 @@ test("post-merge follow-up is duplicate-safe and suppresses suggestions at activ
     issueNumber: 23,
     pullRequestNumber: 70
   });
-  assert.equal(comments.length, 1);
+  assert.equal(commentsByNumber.get(23).length, 1);
+  assert.equal(commentsByNumber.get(70).length, 1);
+});
+
+test("retry repairs a missing PR acknowledgment without duplicating the existing issue follow-up", async () => {
+  const { client, config, commentsByNumber } = fixture({ existingIssueFollowUp: true });
+
+  const result = await postMergeFollowUpForIssue({ client, config, issueNumber: 23, pullRequestNumber: 70 });
+  assert.equal(result.type, "followed-up");
+  assert.equal(result.issueCommentAdded, false);
+  assert.equal(result.pullRequestCommentAdded, true);
+  assert.deepEqual(result.suggestions, []);
+  assert.equal(commentsByNumber.get(23).length, 1);
+  assert.equal(commentsByNumber.get(70).length, 1);
+  assert.match(commentsByNumber.get(70)[0].body, /first contribution has been merged/i);
 });
