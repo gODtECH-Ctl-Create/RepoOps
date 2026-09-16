@@ -14,7 +14,12 @@ The first-contribution classification is deliberately conservative:
 
 ## Message behavior
 
-A first completed contribution receives a distinct welcome with the completed issue/PR and configured contributor resources. Returning or unknown contributors receive a shorter completion acknowledgement.
+A completed contribution is acknowledged on two surfaces:
+
+- **Merged pull request** — a short contributor-facing acknowledgment appears where the contributor just finished working. First contributions receive a distinct welcome; returning or unknown contributors receive a normal thank-you. The PR message points back to the completed issue.
+- **Linked issue** — the detailed completion record contains the issue/PR relationship, configured contributor resources, and any deterministic next-work suggestions.
+
+This keeps the PR conversation immediately useful to the contributor without duplicating the longer resource and next-work content.
 
 Post-merge messages reuse the existing `contributorGuidance` policy. Two optional HTTPS fields are specifically useful after completion:
 
@@ -26,7 +31,7 @@ contributorGuidance:
 
 Both fields default to empty strings and are display-only links. RepoOps itself points them at the public Contributor Hub and repository roadmap.
 
-Each issue/merged-PR pair has a stable bot-authored marker. Repeated issue-close and merged-PR deliveries therefore converge on one follow-up comment rather than producing duplicates.
+The issue follow-up and PR acknowledgment each have their own stable bot-authored marker. Repeated issue-close and merged-PR deliveries therefore converge without duplicate comments on either surface. If one write succeeds and the other fails, a later delivery repairs only the missing surface.
 
 ## Next-work suggestions
 
@@ -48,4 +53,4 @@ RepoOps never automatically assigns suggested work. Contributors still opt in by
 
 Both issue-close and merged pull-request events can trigger the same follow-up logic. The `pull_request_target` path executes the repository's base-branch RepoOps code only; contributor branch code is not executed by the post-merge workflow.
 
-Run `npm run check` for message, selection, history, event-routing, and duplicate-suppression regression tests.
+Run `npm run check` for message, selection, history, event-routing, two-surface recovery, and duplicate-suppression regression tests.

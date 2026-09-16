@@ -1,7 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { buildPostMergeMessage, postMergeMarker, selectNextWork } from "../src/core/post-merge.mjs";
+import {
+  buildPostMergeMessage,
+  buildPullRequestPostMergeMessage,
+  postMergeMarker,
+  postMergePullRequestMarker,
+  selectNextWork
+} from "../src/core/post-merge.mjs";
 
 function issue(number, labels = ["status: ready"], overrides = {}) {
   return {
@@ -82,6 +88,34 @@ test("returning and unknown history use normal thanks rather than false first-co
   }
 });
 
-test("post-merge marker is stable for one issue and pull request", () => {
+test("merged PR acknowledgment gives first contributors a concise welcome and points back to the issue", () => {
+  const message = buildPullRequestPostMergeMessage({
+    contributor: "alice",
+    issueNumber: 23,
+    contributionStatus: "first"
+  });
+
+  assert.match(message, /first contribution has been merged/i);
+  assert.match(message, /completing #23 through this pull request/i);
+  assert.match(message, /contributor community/i);
+  assert.match(message, /recorded on #23/i);
+  assert.doesNotMatch(message, /Available work you can look at next/);
+});
+
+test("returning and unknown contributors receive normal PR acknowledgment", () => {
+  for (const contributionStatus of ["returning", "unknown"]) {
+    const message = buildPullRequestPostMergeMessage({
+      contributor: "alice",
+      issueNumber: 23,
+      contributionStatus
+    });
+    assert.match(message, /contribution has been merged/i);
+    assert.doesNotMatch(message, /first contribution/i);
+    assert.match(message, /recorded on #23/i);
+  }
+});
+
+test("post-merge markers are stable and independent for issue and pull request surfaces", () => {
   assert.equal(postMergeMarker(100, 22), "<!-- repoops:post-merge:v1:100:22 -->");
+  assert.equal(postMergePullRequestMarker(100, 22), "<!-- repoops:post-merge-pr:v1:100:22 -->");
 });

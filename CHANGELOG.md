@@ -8,6 +8,8 @@ The format follows a Keep a Changelog-style categories and the project intends t
 
 ### Added
 
+- Independent post-merge acknowledgment on the merged pull request, with first-contributor recognition and duplicate-safe recovery when the detailed issue follow-up already exists.
+
 - Idempotent post-merge contributor follow-up with conservative first-contribution recognition, contributor resources, and deterministic next-work suggestions that respect readiness and active-work limits.
 
 - Configurable contributor active-work limits for RepoOps-managed issue assignments, with paginated discovery, maintainer exemption, and explicit at-limit guidance.
