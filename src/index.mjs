@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 
+import { decideActiveWorkLimit, isMaintainerAssociation } from "./core/active-work.mjs";
 import { decideClaim } from "./core/claim.mjs";
 import { routeCommand } from "./core/commands.mjs";
 import { loadRepoOpsConfig } from "./core/config.mjs";
@@ -7,6 +8,7 @@ import { buildClaimConfirmation, buildCommentGuidance, commentGuidanceMarker } f
 import { isAvailable, workflowTransition } from "./core/workflow-state.mjs";
 import { decideUnclaim } from "./core/unclaim.mjs";
 import { executeOperation, operationKey } from "./core/idempotency.mjs";
+import { listManagedActiveAssignments } from "./github/active-work.mjs";
 import { commentOperationStore, issueMutationSteps } from "./github/operations.mjs";
 import { GitHubClient } from "./github/client.mjs";
 
@@ -62,6 +64,25 @@ export async function handleIssueComment(event, client, config) {
       if (issue.id !== event.issue.id || issue.pull_request) throw new Error("Issue identity mismatch");
       if (issue.state !== "open") return { state: issue.state, message: "RepoOps: commands require an open issue.", mutations: [] };
       if (routed.command.name === "/claim" && !issue.assignees.some((a) => a.login === actor) && !isAvailable(issue.labels)) return { state: issue.state, message: "RepoOps: this issue is blocked or awaiting design/review and is not available to claim.", mutations: [] };
+
+      if (routed.command.name === "/claim" && !issue.assignees.some((a) => a.login === actor)) {
+        const policy = config.contributorLimits;
+        const association = event.comment?.author_association ?? "NONE";
+        const maintainerExempt = !policy.limitMaintainers && isMaintainerAssociation(association);
+        if (policy.maxActiveAssignments > 0 && !maintainerExempt) {
+          const activeIssueNumbers = await listManagedActiveAssignments(client, actor, config);
+          const limit = decideActiveWorkLimit({ policy, authorAssociation: association, activeIssueNumbers });
+          if (!limit.allowed) {
+            return {
+              state: issue.state,
+              message: limit.message,
+              expectedAssignees: issue.assignees.map((a) => a.login),
+              mutations: []
+            };
+          }
+        }
+      }
+
       const common = { actor, assignees: issue.assignees, label: config.labels.inProgress };
       const decision = routed.command.name === "/claim"
         ? decideClaim({ body: "/claim", ...common }) : decideUnclaim(common);
@@ -96,7 +117,6 @@ export async function handleIssueComment(event, client, config) {
 
 export async function handleIssueLifecycle(event, client, config) {
   if (event.action !== "closed" || !event.issue?.number || event.issue.pull_request) return;
-  // Close cleanup reconciles current state rather than replaying snapshot assignments.
   const issue = await client.getIssue(event.issue.number);
   if (issue.state !== "closed") return;
   if (issue.assignees.length) await client.removeAssignees(event.issue.number, issue.assignees.map((a) => a.login));
