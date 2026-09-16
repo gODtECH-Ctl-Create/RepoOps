@@ -19,9 +19,10 @@ Recommended area labels:
 - `area: triage` — issue intake, classification, duplicates, missing information
 - `area: policy` — `.repoops.yml`, rules, validation, permissions and configuration
 - `area: github-api` — REST/GraphQL integration, pagination and rate limits
-- `area: automation` — GitHub Actions, schedules, workflow orchestration
+- `area: automation` — GitHub Actions, schedules and workflow orchestration
 - `area: events` — event model, audit trail and lifecycle history
 - `area: security` — command authorization, permissions, abuse resistance
+- `area: reliability` — idempotency, retries, failure handling and operational resilience
 - `area: developer-experience` — CLI, simulator, fixtures and local workflows
 - `area: observability` — logs, metrics and health reporting
 - `area: docs` — documentation and examples
