@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { validateOperationalEvent } from "./events.mjs";
+import { appendOperationalEvent } from "./events.mjs";
 
 const assignmentTypes = new Map([
   ["issue.claimed", "assign"],
@@ -78,13 +78,9 @@ export function projectCompletedContributions(events = [], linkedIssues = []) {
   requireValue(Array.isArray(events), "Operational event history must be an array");
   requireValue(Array.isArray(linkedIssues), "Linked issue snapshots must be an array");
 
-  const byId = new Map();
-  for (const raw of events) {
-    const event = validateOperationalEvent(raw);
-    if (byId.has(event.id)) continue;
-    byId.set(event.id, event);
-  }
-  const validated = [...byId.values()];
+  let validated = Object.freeze([]);
+  for (const raw of events) validated = appendOperationalEvent(validated, raw);
+
   const completed = [];
   const unresolved = [];
   const completedIds = new Set();
