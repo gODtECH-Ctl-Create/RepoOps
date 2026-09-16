@@ -100,3 +100,9 @@ A contribution is normally complete when:
 Use the Stale assignment reminders workflow in dry-run mode for existing issues,
 or live_validation for a disposable issue and real reminder/retry checks. See
 [the validation procedure](stale-assignments.md). Pure tests use fixed UTC clocks.
+
+## Operational event contracts
+
+Use `src/core/events.mjs` for validated event records. Tests should supply fixed
+UTC occurrence timestamps and trusted source identities, cover replay conflicts,
+and reject raw payload/secret metadata. See [schema version 1](events.md).

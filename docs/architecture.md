@@ -77,22 +77,16 @@ later
 GitHub App → webhooks → API → queue/workers → PostgreSQL → dashboard
 ```
 
-## Future event model
+## Operational event model
 
-RepoOps will eventually need an append-only operational event history for actions such as:
+`src/core/events.mjs` defines strict version-1 immutable operational facts with
+stable source-based identities, explicit GitHub/RepoOps origin, allowlisted
+metadata and replay-conflict validation. The append helper is pure and has no
+storage. See [the event contract](events.md) for supported types and compatibility.
 
-```text
-command.received
-issue.claimed
-issue.unclaimed
-assignment.reminder_sent
-assignment.expired
-pull_request.linked
-review.requested
-policy.denied
-```
-
-GitHub remains authoritative for repository objects, while RepoOps events capture operational context: what automation decided, under which policy, and why.
+Recovery receipts are mutable checkpoints, not append-only audit history.
+Emission remains #20; timeline/completion projections remain #21/#36. Schema
+support for future event types does not implement their underlying actions.
 
 ## Security boundary
 

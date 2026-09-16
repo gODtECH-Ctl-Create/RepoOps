@@ -8,6 +8,8 @@ The format follows Keep a Changelog-style categories and the project intends to 
 
 ### Added
 
+- Version-1 operational event contract with immutable records, typed metadata, source-based identities, and explicit replay conflicts.
+
 - Scheduled, non-destructive stale-assignment reminders using assignment timeline evidence and linked PRs, with per-window receipts and disposable live validation.
 
 - Paginated explicit linked-PR detection, normalized open/merged/closed results, and read-only live inspection.

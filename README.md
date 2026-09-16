@@ -222,6 +222,10 @@ explicit implementation PR links; they never automatically release work.
 See [assignment configuration](docs/configuration.md), [retry recovery](docs/idempotency.md),
 and [scanner operation and live validation](docs/stale-assignments.md).
 
+The [versioned operational event contract](docs/events.md) defines immutable facts
+and replay validation for future audit and history consumers. Audit emission and
+persistent event storage remain separate work.
+
 ---
 
 <p align="center">
