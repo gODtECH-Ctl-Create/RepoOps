@@ -9,3 +9,12 @@ assignments:
   reminderAfterDays: 3
   expireAfterDays: 7
   autoRelease: false
+
+contributorGuidance:
+  enabled: true
+  requirements: "Node.js 20+ and Git"
+  setupCommand: "npm install"
+  checkCommand: "npm run check"
+  contributingUrl: "https://github.com/gODtECH-Ctl-Create/RepoOps/blob/main/CONTRIBUTING.md"
+  developmentUrl: "https://github.com/gODtECH-Ctl-Create/RepoOps/blob/main/docs/development.md"
+  architectureUrl: "https://github.com/gODtECH-Ctl-Create/RepoOps/blob/main/docs/architecture.md"
