@@ -1,0 +1,15 @@
+{
+  "name": "repoops",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Open-source IssueOps and repository operations automation for GitHub maintainers.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "check": "npm test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}
