@@ -2,11 +2,13 @@
 
 All notable user-visible changes to RepoOps will be documented in this file.
 
-The format follows Keep a Changelog-style categories and the project intends to use semantic versioning for public releases.
+The format follows a Keep a Changelog-style categories and the project intends to use semantic versioning for public releases.
 
 ## Unreleased
 
 ### Added
+
+- Configurable contributor onboarding on successful `/claim`, including repository-owned requirements, setup/check commands, and contributor/development/architecture links without executing configured text.
 
 - Version-1 operational event contract with immutable records, typed metadata, source-based identities, and explicit replay conflicts.
 
