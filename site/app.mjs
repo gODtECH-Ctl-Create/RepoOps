@@ -182,6 +182,17 @@ function wireLinks() {
       node.href = href;
     });
   });
+
+  const heroContributorCta = document.querySelector(".hero-actions a.button--primary[href='#contribute']");
+  if (heroContributorCta) heroContributorCta.href = "./contribute.html";
+
+  const pickIssueCta = document.querySelector(".path-card--primary a[data-link='ready']");
+  if (pickIssueCta) {
+    pickIssueCta.href = "./contribute.html";
+    pickIssueCta.removeAttribute("target");
+    pickIssueCta.removeAttribute("rel");
+    pickIssueCta.textContent = "Open contributor hub";
+  }
 }
 
 function updateYear() {
