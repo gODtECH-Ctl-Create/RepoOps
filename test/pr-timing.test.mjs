@@ -58,6 +58,26 @@ test("malformed timestamps fail safely without throwing", () => {
   assert.equal(partiallyMalformed.reviewAge, null);
 });
 
+test("rejects timezone-less timestamps", () => {
+  const result = calculatePullRequestTiming({
+    now: "2026-01-01T02:00:00Z",
+    events: [{ state: "waiting-for-review", timestamp: "2026-01-01T01:00:00" }]
+  });
+
+  assert.equal(result.currentState, "unknown");
+  assert.equal(result.reviewAge, null);
+});
+
+test("rejects impossible calendar dates", () => {
+  const result = calculatePullRequestTiming({
+    now: "2026-03-01T02:00:00Z",
+    events: [{ state: "waiting-for-review", timestamp: "2026-02-31T01:00:00Z" }]
+  });
+
+  assert.equal(result.currentState, "unknown");
+  assert.equal(result.reviewAge, null);
+});
+
 test("ignores events after the observation time", () => {
   const result = calculatePullRequestTiming({
     now: "2026-01-01T01:30:00Z",

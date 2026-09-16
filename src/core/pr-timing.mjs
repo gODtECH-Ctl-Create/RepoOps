@@ -11,8 +11,54 @@ const KNOWN_STATES = new Set([
 ]);
 
 function parseTimestamp(value) {
-  if (typeof value !== "string" || !Number.isFinite(Date.parse(value))) return null;
-  return new Date(value).toISOString();
+  if (typeof value !== "string") return null;
+
+  const match = value.match(
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,9}))?(Z|[+-]\d{2}:\d{2})$/
+  );
+  if (!match) return null;
+
+  const [
+    ,
+    yearText,
+    monthText,
+    dayText,
+    hourText,
+    minuteText,
+    secondText,
+    ,
+    timezone
+  ] = match;
+
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+  const second = Number(secondText);
+
+  if (
+    month < 1 || month > 12
+    || day < 1
+    || day > new Date(Date.UTC(year, month, 0)).getUTCDate()
+    || hour > 23
+    || minute > 59
+    || second > 59
+  ) {
+    return null;
+  }
+
+  if (timezone !== "Z") {
+    const offsetHours = Number(timezone.slice(1, 3));
+    const offsetMinutes = Number(timezone.slice(4, 6));
+
+    if (offsetHours > 23 || offsetMinutes > 59) return null;
+  }
+
+  const timestamp = new Date(value);
+  if (!Number.isFinite(timestamp.getTime())) return null;
+
+  return timestamp.toISOString();
 }
 
 function validEvent(event) {
