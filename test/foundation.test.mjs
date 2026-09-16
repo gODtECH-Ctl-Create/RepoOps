@@ -46,7 +46,9 @@ test("parses valid RepoOps configuration", () => {
         developmentUrl: "",
         architectureUrl: "",
         problemUrl: "",
-        upgradeUrl: ""
+        upgradeUrl: "",
+        contributorHubUrl: "",
+        roadmapUrl: ""
       }
     }
   );

@@ -8,6 +8,8 @@ The format follows a Keep a Changelog-style categories and the project intends t
 
 ### Added
 
+- Idempotent post-merge contributor follow-up with conservative first-contribution recognition, contributor resources, and deterministic next-work suggestions that respect readiness and active-work limits.
+
 - Configurable contributor active-work limits for RepoOps-managed issue assignments, with paginated discovery, maintainer exemption, and explicit at-limit guidance.
 
 - Deterministic completed-contribution history projection from operational events and authoritative linked-PR relationships, including conservative first/returning/unknown contributor classification.

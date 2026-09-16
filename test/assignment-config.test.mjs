@@ -43,7 +43,9 @@ test("parses contributor guidance without assuming project-specific commands", (
     developmentUrl: "",
     architectureUrl: "",
     problemUrl: "",
-    upgradeUrl: ""
+    upgradeUrl: "",
+    contributorHubUrl: "",
+    roadmapUrl: ""
   });
 
   const configured = parseRepoOpsConfig(`contributorGuidance:
@@ -56,11 +58,15 @@ test("parses contributor guidance without assuming project-specific commands", (
   architectureUrl: "https://example.com/architecture"
   problemUrl: "https://example.com/problems/new"
   upgradeUrl: "https://example.com/upgrades/new"
+  contributorHubUrl: "https://example.com/contribute"
+  roadmapUrl: "https://example.com/roadmap"
 `).contributorGuidance;
   assert.equal(configured.setupCommand, "npm install");
   assert.equal(configured.checkCommand, "npm run check");
   assert.equal(configured.problemUrl, "https://example.com/problems/new");
   assert.equal(configured.upgradeUrl, "https://example.com/upgrades/new");
+  assert.equal(configured.contributorHubUrl, "https://example.com/contribute");
+  assert.equal(configured.roadmapUrl, "https://example.com/roadmap");
 });
 
 test("rejects unsafe or malformed contributor guidance", () => {
@@ -71,6 +77,8 @@ test("rejects unsafe or malformed contributor guidance", () => {
     "contributorGuidance:\n  developmentUrl: \"../docs/development.md\"",
     "contributorGuidance:\n  problemUrl: \"javascript:alert(1)\"",
     "contributorGuidance:\n  upgradeUrl: \"http://example.com/upgrade\"",
+    "contributorGuidance:\n  contributorHubUrl: \"http://example.com/contribute\"",
+    "contributorGuidance:\n  roadmapUrl: \"../ROADMAP.md\"",
     "contributorGuidance:\n  unknown: \"value\""
   ]) assert.throws(() => parseRepoOpsConfig(text));
 });

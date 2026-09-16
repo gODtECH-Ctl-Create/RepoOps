@@ -24,3 +24,5 @@ contributorGuidance:
   architectureUrl: "https://github.com/gODtECH-Ctl-Create/RepoOps/blob/MASTER/docs/architecture.md"
   problemUrl: "https://github.com/gODtECH-Ctl-Create/RepoOps/issues/new?template=problem.yml"
   upgradeUrl: "https://github.com/gODtECH-Ctl-Create/RepoOps/issues/new?template=feature.yml"
+  contributorHubUrl: "https://godtech-ctl-create.github.io/RepoOps/contribute.html"
+  roadmapUrl: "https://github.com/gODtECH-Ctl-Create/RepoOps/blob/MASTER/docs/roadmap.md"
