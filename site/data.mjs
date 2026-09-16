@@ -6,11 +6,11 @@ export const LINKS = Object.freeze({
   goodFirstIssues: `https://github.com/${REPOSITORY}/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22+label%3A%22status%3A+ready%22+no%3Aassignee`,
   problemProposal: `https://github.com/${REPOSITORY}/issues/new?template=problem.yml`,
   upgradeProposal: `https://github.com/${REPOSITORY}/issues/new?template=feature.yml`,
-  contributing: `https://github.com/${REPOSITORY}/blob/main/CONTRIBUTING.md`,
-  roadmap: `https://github.com/${REPOSITORY}/blob/main/docs/roadmap.md`,
-  architecture: `https://github.com/${REPOSITORY}/blob/main/docs/architecture.md`,
-  security: `https://github.com/${REPOSITORY}/blob/main/SECURITY.md`,
-  changelog: `https://github.com/${REPOSITORY}/blob/main/CHANGELOG.md`
+  contributing: `https://github.com/${REPOSITORY}/blob/MASTER/CONTRIBUTING.md`,
+  roadmap: `https://github.com/${REPOSITORY}/blob/MASTER/docs/roadmap.md`,
+  architecture: `https://github.com/${REPOSITORY}/blob/MASTER/docs/architecture.md`,
+  security: `https://github.com/${REPOSITORY}/blob/MASTER/SECURITY.md`,
+  changelog: `https://github.com/${REPOSITORY}/blob/MASTER/CHANGELOG.md`
 });
 
 export const GOOD_FIRST_ISSUES_API =
