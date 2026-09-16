@@ -20,24 +20,27 @@ RepoOps treats that work as automation while keeping humans in control of conseq
 
 ## Current status
 
-RepoOps v0.1 is working end to end in this repository.
+RepoOps v0.2 has a working IssueOps foundation.
 
-Implemented:
+Implemented commands:
 
 ```text
 /claim
+/unclaim
 ```
 
-When a contributor posts `/claim` on an unassigned issue, RepoOps:
+Current foundation includes:
 
-1. validates that the comment is on an issue, not a pull request
-2. checks that the issue is still unassigned
-3. assigns the commenter
-4. ensures the `status: in-progress` label exists
-5. applies the label
-6. posts a confirmation comment
+- GitHub Actions event handling
+- slash-command dispatcher
+- validated `.repoops.yml`
+- configurable in-progress label
+- safe assignment release
+- automatic claim-state cleanup when an issue closes
+- deterministic tests and event fixtures
+- local event simulation
 
-If an issue is already assigned, RepoOps leaves ownership unchanged and explains why.
+Read the [command guide](docs/commands.md) and [configuration guide](docs/configuration.md) for current behavior.
 
 ## Architecture
 
@@ -68,8 +71,9 @@ Before contributing:
 1. read [CONTRIBUTING.md](CONTRIBUTING.md)
 2. review the [development guide](docs/development.md)
 3. understand the [command model](docs/commands.md)
-4. check existing issues before proposing new work
-5. comment `/claim` on an available issue before starting substantial work
+4. review the [issue taxonomy](docs/issue-taxonomy.md)
+5. check existing issues before proposing new work
+6. comment `/claim` on an available issue before starting substantial work
 
 Security-sensitive changes receive additional review. See [SECURITY.md](SECURITY.md).
 
@@ -82,22 +86,18 @@ Requirements: Node.js 20+ and Git.
 ```bash
 npm install
 npm run check
+npm run simulate -- test/fixtures/claim-event.json
 ```
 
 The runtime currently has no third-party dependencies.
 
 ## Roadmap
 
-- **v0.1** — `/claim` issue assignment
-- **v0.2** — command dispatcher, `/unclaim`, assignment lifecycle, contributor follow-up
-- **v0.3** — maintainer/contributor work queue
-- **v0.4** — PR review queue and stale PR detection
-- **v0.5** — repository health and operational event history
-- **v0.6** — configurable policy/rules engine
-- **v0.7** — reusable GitHub Action
-- **v0.8** — GitHub App and multi-repository control plane
+RepoOps is being developed in stages from IssueOps automation to PR operations, triage, operational event history, reusable distribution, a GitHub App control plane, and multi-repository analytics.
 
-The roadmap is intentionally broad. Public roadmap issues should represent real maintainer pain, not artificial contribution tasks.
+Read the detailed [product roadmap](docs/roadmap.md).
+
+Release/versioning expectations are documented in [docs/releases.md](docs/releases.md), and user-visible changes are tracked in [CHANGELOG.md](CHANGELOG.md).
 
 ## Design principles
 
