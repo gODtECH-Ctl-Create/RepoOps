@@ -16,7 +16,7 @@ async function contributorIsMaintainer(client, login, policy) {
   }
 }
 
-async function suggestionsForContributor(client, config, contributor, completedIssueNumber) {
+export async function suggestionsForContributor(client, config, contributor, completedIssueNumber) {
   const policy = config.contributorLimits;
   if (policy.maxActiveAssignments > 0 && !(await contributorIsMaintainer(client, contributor, policy))) {
     const activeIssueNumbers = await listManagedActiveAssignments(client, contributor, config);
