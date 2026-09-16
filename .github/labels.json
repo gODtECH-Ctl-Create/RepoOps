@@ -7,6 +7,7 @@
   {"name":"area: automation","color":"0052cc","description":"GitHub Actions, schedules and workflow orchestration"},
   {"name":"area: events","color":"7057ff","description":"Operational events, timelines and audit history"},
   {"name":"area: security","color":"b60205","description":"Permissions, authorization and abuse resistance"},
+  {"name":"area: reliability","color":"d4c5f9","description":"Idempotency, retries, failure handling and operational resilience"},
   {"name":"area: developer-experience","color":"bfdadc","description":"CLI, simulator, fixtures and local tooling"},
   {"name":"area: observability","color":"c2e0c6","description":"Logs, metrics and repository health reporting"},
   {"name":"area: docs","color":"0075ca","description":"Documentation and examples"},
