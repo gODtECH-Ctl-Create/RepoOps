@@ -11,6 +11,12 @@ commands:
 
 labels:
   inProgress: "status: in-progress"
+  ready: "status: ready"
+
+assignments:
+  reminderAfterDays: 3
+  expireAfterDays: 7
+  autoRelease: false
 ```
 
 ## `commands`
@@ -61,3 +67,18 @@ Simulation is not a substitute for unit tests. Changes to command or lifecycle b
 ## Configuration compatibility
 
 `.repoops.yml` is a public interface. New options should default safely. Renaming or removing existing keys requires migration guidance and should follow the release policy in `docs/releases.md`.
+
+## Assignment lifecycle policy
+
+`reminderAfterDays` defaults to 3 and `expireAfterDays` defaults to 7. Each must
+be an unquoted integer from 1 through 36500; expiry must be strictly later than
+the reminder threshold. Zero, negative, fractional, quoted numeric, duplicate,
+and unknown settings are rejected. Limits keep UTC day arithmetic bounded.
+
+`autoRelease` is a boolean and defaults to false. These settings configure policy;
+this version does not implement automatic expiry or release, even when true is
+explicitly configured. The first scheduled scanner remains reminder-only.
+
+`labels.ready` defaults to `status: ready`. It and `labels.inProgress` must be
+non-empty trimmed strings with distinct names (case-insensitive). Existing
+configurations receive these new defaults without requiring migration.

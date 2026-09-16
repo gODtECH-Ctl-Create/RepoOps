@@ -4,3 +4,8 @@ commands:
   unclaim: true
 labels:
   inProgress: "status: in-progress"
+
+assignments:
+  reminderAfterDays: 3
+  expireAfterDays: 7
+  autoRelease: false

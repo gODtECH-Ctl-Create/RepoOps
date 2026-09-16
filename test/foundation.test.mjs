@@ -34,7 +34,8 @@ test("parses valid RepoOps configuration", () => {
     parseRepoOpsConfig(`commands:\n  claim: true\n  unclaim: false\nlabels:\n  inProgress: "work: active"\n`),
     {
       commands: { claim: true, unclaim: false },
-      labels: { inProgress: "work: active" }
+      labels: { inProgress: "work: active", ready: "status: ready" },
+    assignments: { reminderAfterDays: 3, expireAfterDays: 7, autoRelease: false }
     }
   );
 });
