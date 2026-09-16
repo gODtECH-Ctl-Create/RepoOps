@@ -1,0 +1,55 @@
+name: Feature request
+description: Propose a maintainer workflow or repository-operations improvement
+title: "[Feature]: "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        RepoOps prioritizes real maintainer pain over novelty. Explain the operational problem first, then the proposed solution.
+  - type: textarea
+    id: pain
+    attributes:
+      label: Maintainer pain point
+      description: What repetitive, error-prone, or hard-to-see repository work needs improvement?
+      placeholder: Maintainers currently have to manually...
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: Current workaround
+      description: How do maintainers handle this today, in GitHub or elsewhere?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed RepoOps behavior
+      description: Describe the smallest useful automation or operational view.
+    validations:
+      required: true
+  - type: textarea
+    id: safety
+    attributes:
+      label: Safety and permissions
+      description: Could this mutate repository state, require new permissions, or perform destructive actions?
+  - type: textarea
+    id: proof
+    attributes:
+      label: Acceptance criteria
+      description: What observable behavior would prove this feature works?
+      placeholder: |
+        - [ ] ...
+        - [ ] ...
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues and roadmap items for duplicates.
+          required: true
+        - label: This solves a repository-operations problem rather than duplicating a built-in GitHub feature without a clear reason.
+          required: true
