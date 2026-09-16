@@ -1,0 +1,9 @@
+{
+  "action": "closed",
+  "issue": {
+    "number": 42,
+    "assignees": [{ "login": "alice" }],
+    "labels": [{ "name": "status: in-progress" }]
+  },
+  "sender": { "login": "maintainer" }
+}
