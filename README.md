@@ -95,7 +95,7 @@ The architecture keeps event parsing, decisions, and GitHub mutations separate s
 | Strict `.repoops.yml` validation | ✅ Implemented |
 | Event fixtures + local simulation | ✅ Implemented |
 | GitHub Pages product site + contributor hub | ✅ Implemented |
-| Scheduled stale-assignment reminders | 🚧 Current P0 work |
+| Scheduled stale-assignment reminders | ✅ Implemented — reminder-only |
 | Contributor work limits / PR attention / event history | 🗺️ Roadmap |
 
 > [!IMPORTANT]
