@@ -32,3 +32,37 @@ test("close cleanup is repeatable and ignores stale close after reopen", async (
   await handleIssueLifecycle(closed, client, DEFAULT_CONFIG);
   assert.equal(client.issue.assignees[0].login, "bob");
 });
+
+test("ready → claim → in-progress → unclaim → ready including repeated commands", async () => {
+  const client = fakeClient(); client.issue.labels = [{ name: "status: ready" }];
+  await handleIssueComment(event(), client, DEFAULT_CONFIG);
+  assert.deepEqual(client.issue.labels, [{ name: "status: in-progress" }]);
+  await handleIssueComment(event(2), client, DEFAULT_CONFIG);
+  assert.equal(client.calls.filter((c) => c === "assign").length, 1);
+  assert.equal(client.calls.filter((c) => c === "add-label").length, 1);
+  await handleIssueComment(event(3, "/unclaim"), client, DEFAULT_CONFIG);
+  assert.deepEqual(client.issue.labels, [{ name: "status: ready" }]);
+  await handleIssueComment(event(4, "/unclaim"), client, DEFAULT_CONFIG);
+  assert.deepEqual(client.issue.labels, [{ name: "status: ready" }]);
+});
+test("contradictory labels repaired and missing labels tolerated", async () => {
+  const client = fakeClient(); client.issue.assignees = [{ login: "alice" }];
+  client.issue.labels = [{ name: "status: ready" }, { name: "status: in-progress" }];
+  await handleIssueComment(event(), client, DEFAULT_CONFIG);
+  assert.deepEqual(client.issue.labels, [{ name: "status: in-progress" }]);
+  client.issue.state = "closed"; client.issue.labels.push({ name: "status: ready" });
+  await handleIssueLifecycle({ action: "closed", issue: { number: 2 } }, client, DEFAULT_CONFIG);
+  assert.deepEqual(client.issue.labels, []);
+  await handleIssueLifecycle({ action: "closed", issue: { number: 2 } }, client, DEFAULT_CONFIG);
+});
+test("unclaim does not restore readiness with another assignee or blocked work", async () => {
+  const client = fakeClient(); client.issue.assignees = [{ login: "alice" }, { login: "bob" }];
+  await handleIssueComment(event(1, "/unclaim"), client, DEFAULT_CONFIG);
+  assert.deepEqual(client.issue.assignees, [{ login: "bob" }]);
+  assert.deepEqual(client.issue.labels, [{ name: "status: in-progress" }]);
+  const blocked = fakeClient(); blocked.issue.assignees = [{ login: "alice" }]; blocked.issue.labels = [{ name: "status: blocked" }, { name: "status: in-progress" }];
+  await handleIssueComment(event(1, "/unclaim"), blocked, DEFAULT_CONFIG);
+  assert.deepEqual(blocked.issue.labels, [{ name: "status: blocked" }]);
+  await handleIssueComment(event(2), blocked, DEFAULT_CONFIG);
+  assert.deepEqual(blocked.issue.assignees, []);
+});

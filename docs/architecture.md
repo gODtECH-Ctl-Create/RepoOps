@@ -105,3 +105,7 @@ Never interpolate untrusted GitHub content into shell commands or dynamically ex
 calling GitHub. `src/github/operations.mjs` stores authenticated operation receipts
 and reconciles fresh issue state. See [idempotency and recovery](idempotency.md)
 for checkpoint semantics, ambiguous failures, and concurrency limits.
+
+`src/core/workflow-state.mjs` plans deterministic workflow-label transitions.
+The GitHub mutation layer checks fresh state and only changes absent/present labels
+when needed. Assignment reminder/expiry settings are policy, not release automation.

@@ -14,7 +14,7 @@ Expected behavior:
 - refuse to replace an existing assignee
 - assign the commenter when the issue is available
 - ensure the configured in-progress label exists
-- apply the status label
+- remove ready before adding in-progress; repeated claims reconcile missing state
 - post a confirmation comment
 
 Example:
@@ -30,7 +30,7 @@ Releases the commenter's own assignment and returns the issue to available work.
 Expected behavior:
 - only act when the commenter is currently assigned
 - never remove another contributor's assignment
-- remove the configured in-progress label
+- remove in-progress and restore ready only when the issue is open, unassigned, and available
 - post a confirmation comment
 
 Example:
@@ -71,3 +71,13 @@ Command deliveries use a bot-authored operation receipt that becomes the final
 confirmation. Retries of the same comment do not repeat completed operations.
 Commands require a currently open issue. See [recovery guidance](idempotency.md)
 if a receipt remains pending after a workflow failure.
+
+## Workflow state transitions
+
+Ready and in-progress are mutually exclusive. Claim transitions ready to
+in-progress; unclaim restores ready only if no assignees remain and no blocked,
+needs-design, needs-review, or dependency-blocked label makes work unavailable.
+Claims on such unavailable issues are refused unless already owned. Unclaim with
+another assignee remaining retains in-progress. A repeated unclaim on an
+unassigned open issue can repair missing workflow state. Other labels are preserved.
+Closing an issue removes both ready and in-progress and clears assignments.

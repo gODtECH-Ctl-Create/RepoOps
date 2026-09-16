@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { decideClaim } from "../src/core/claim.mjs";
 import { routeCommand } from "../src/core/commands.mjs";
 import { loadRepoOpsConfig } from "../src/core/config.mjs";
+import { workflowTransition } from "../src/core/workflow-state.mjs";
 import { decideClosedIssueCleanup } from "../src/core/lifecycle.mjs";
 import { decideUnclaim } from "../src/core/unclaim.mjs";
 
@@ -38,11 +39,11 @@ if (event.comment) {
 }
 
 if (event.action === "closed" && event.issue) {
-  console.log(JSON.stringify(decideClosedIssueCleanup({
+  console.log(JSON.stringify({ ...decideClosedIssueCleanup({
     assignees: event.issue.assignees ?? [],
     labels: event.issue.labels ?? [],
     inProgressLabel: config.labels.inProgress
-  }), null, 2));
+  }), mutations: workflowTransition({ state: "closed", assignees: [], labels: event.issue.labels ?? [], action: "closed", policy: config.labels }) }, null, 2));
   process.exit(0);
 }
 
