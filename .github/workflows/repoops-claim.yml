@@ -1,20 +1,22 @@
-name: RepoOps Claim
+name: RepoOps IssueOps
 
 on:
   issue_comment:
     types: [created]
+  issues:
+    types: [closed]
 
 permissions:
   contents: read
   issues: write
 
 concurrency:
-  group: repoops-claim-${{ github.event.issue.number }}
+  group: repoops-${{ github.event.issue.number }}
   cancel-in-progress: false
 
 jobs:
-  claim:
-    if: ${{ github.event.issue.pull_request == null && startsWith(github.event.comment.body, '/claim') }}
+  handle:
+    if: ${{ github.event.issue.pull_request == null && (github.event_name == 'issues' || startsWith(github.event.comment.body, '/')) }}
     runs-on: ubuntu-latest
 
     steps:
@@ -26,7 +28,7 @@ jobs:
         with:
           node-version: 20
 
-      - name: Run RepoOps claim handler
+      - name: Run RepoOps handler
         run: node src/index.mjs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
