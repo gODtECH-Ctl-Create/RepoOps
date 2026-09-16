@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="RepoOps is an open-source repository-operations and IssueOps toolkit that helps GitHub maintainers keep contributor work moving safely."
+    />
+    <meta name="theme-color" content="#07111f" />
+    <title>RepoOps — Repository operations that keep work moving</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="RepoOps home">
+        <span class="brand-mark" aria-hidden="true">R&gt;</span>
+        <span>RepoOps</span>
+      </a>
+      <nav aria-label="Primary navigation">
+        <a href="#product">Product</a>
+        <a href="#live-issues">Live issues</a>
+        <a href="#contributors">Contributors</a>
+        <a href="#contribute">Contribute</a>
+      </nav>
+      <a class="button button--ghost header-cta" data-link="repo" target="_blank" rel="noreferrer">GitHub ↗</a>
+    </header>
+
+    <main id="main">
+      <section class="hero section" id="top">
+        <div class="hero-copy">
+          <p class="eyebrow">OPEN-SOURCE REPOSITORY OPERATIONS</p>
+          <h1>Keep repository work <span>moving.</span></h1>
+          <p class="hero-lead">
+            RepoOps turns GitHub events and explicit commands into safe, testable maintainer workflows—so claimed issues, contributor follow-up, PR attention, and repository operations do not disappear into the noise.
+          </p>
+          <div class="hero-actions">
+            <a class="button button--primary" href="#contribute">Contribute to RepoOps</a>
+            <a class="button button--secondary" data-link="repo" target="_blank" rel="noreferrer">View repository</a>
+          </div>
+          <div class="hero-signals" aria-label="RepoOps principles">
+            <span>Deterministic</span>
+            <span>Least privilege</span>
+            <span>Human-controlled</span>
+            <span>Open source</span>
+          </div>
+        </div>
+
+        <aside class="ops-console" aria-label="RepoOps operations preview">
+          <div class="console-bar">
+            <div class="console-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+            <span>repoops / attention</span>
+          </div>
+          <div class="console-body">
+            <p><span class="prompt">$</span> repoops inspect --attention</p>
+            <div class="console-row"><span class="status status--ready">READY</span><span>issue.available</span><small>safe to claim</small></div>
+            <div class="console-row"><span class="status status--work">WORK</span><span>issue.claimed</span><small>contributor active</small></div>
+            <div class="console-row"><span class="status status--review">REVIEW</span><span>pull_request.ready</span><small>maintainer needed</small></div>
+            <div class="console-row"><span class="status status--wait">WAIT</span><span>assignment.reminder</span><small>follow-up due</small></div>
+            <p class="console-success">✓ consequential actions remain human-controlled</p>
+          </div>
+        </aside>
+      </section>
+
+      <section class="signal-strip" aria-label="Quick project links">
+        <a data-link="good-first" target="_blank" rel="noreferrer"><strong>Good First Issues</strong><span>available starter work</span></a>
+        <a data-link="ready" target="_blank" rel="noreferrer"><strong>Ready Work</strong><span>unassigned and claimable</span></a>
+        <a data-link="roadmap" target="_blank" rel="noreferrer"><strong>Roadmap</strong><span>where RepoOps is heading</span></a>
+        <a data-link="architecture" target="_blank" rel="noreferrer"><strong>Architecture</strong><span>how decisions stay testable</span></a>
+      </section>
+
+      <section class="section" id="product">
+        <div class="section-heading">
+          <p class="eyebrow">THE OPERATIONS LAYER</p>
+          <h2>GitHub has the events. RepoOps handles the operational follow-through.</h2>
+          <p>RepoOps coordinates GitHub rather than rebuilding it. The source of truth stays in issues, pull requests, checks, reviews, and repository policy.</p>
+        </div>
+
+        <div class="feature-grid">
+          <article class="feature-card"><span>01</span><h3>Assignment lifecycle</h3><p>Claim, unclaim, follow up on stale work, and keep contributor ownership visible.</p></article>
+          <article class="feature-card"><span>02</span><h3>Maintainer attention</h3><p>Surface the issues and pull requests that genuinely require a human decision.</p></article>
+          <article class="feature-card"><span>03</span><h3>Safe automation</h3><p>Pure decision logic, least-privilege workflows, idempotent mutations, and explicit policy.</p></article>
+          <article class="feature-card"><span>04</span><h3>Operational history</h3><p>Build a trustworthy record of what RepoOps did, why it happened, and what needs attention next.</p></article>
+        </div>
+      </section>
+
+      <section class="section workflow-section">
+        <div class="section-heading section-heading--compact">
+          <p class="eyebrow">HOW IT WORKS</p>
+          <h2>A small, inspectable decision path.</h2>
+        </div>
+        <div class="workflow-flow" aria-label="RepoOps architecture flow">
+          <div><strong>GitHub event</strong><span>comment · issue · PR · schedule</span></div>
+          <b aria-hidden="true">→</b>
+          <div><strong>RepoOps decision</strong><span>command · policy · lifecycle</span></div>
+          <b aria-hidden="true">→</b>
+          <div><strong>Safe action</strong><span>assign · label · comment · queue</span></div>
+        </div>
+      </section>
+
+      <section class="section live-section" id="live-issues">
+        <div class="section-heading split-heading">
+          <div>
+            <p class="eyebrow">LIVE FROM GITHUB</p>
+            <h2>Good First Issues</h2>
+            <p>Only open, ready, unassigned starter work is shown here. GitHub remains the authoritative issue conversation.</p>
+          </div>
+          <div class="live-control">
+            <span class="live-status" id="issueFeedStatus">Connecting to GitHub…</span>
+            <a class="button button--secondary" data-link="good-first" target="_blank" rel="noreferrer">View all</a>
+          </div>
+        </div>
+        <div class="issue-grid" id="issueFeed" aria-live="polite" aria-busy="true">
+          <div class="feed-state"><strong>Loading available work…</strong><p>Checking RepoOps' public GitHub issues.</p></div>
+        </div>
+      </section>
+
+      <section class="section contribute-section" id="contribute">
+        <div class="section-heading">
+          <p class="eyebrow">CHOOSE YOUR ENTRY POINT</p>
+          <h2>Contribute to the product, not just the codebase.</h2>
+          <p>Pick existing work, report a concrete problem, or propose an upgrade. New proposals are triaged on GitHub before they become claimable work.</p>
+        </div>
+        <div class="path-grid">
+          <article class="path-card path-card--primary">
+            <span class="path-icon" aria-hidden="true">↳</span>
+            <h3>Pick an issue</h3>
+            <p>Start with work that is already scoped, unblocked, and ready for a contributor.</p>
+            <a class="button button--primary" data-link="ready" target="_blank" rel="noreferrer">Find ready work</a>
+          </article>
+          <article class="path-card">
+            <span class="path-icon" aria-hidden="true">!</span>
+            <h3>Propose a problem</h3>
+            <p>Found incorrect behavior, workflow friction, a reliability gap, or a maintainer pain point? Put it into the GitHub triage flow.</p>
+            <a class="button button--secondary" data-link="problem" target="_blank" rel="noreferrer">Report a problem</a>
+          </article>
+          <article class="path-card">
+            <span class="path-icon" aria-hidden="true">+</span>
+            <h3>Propose an upgrade</h3>
+            <p>Suggest a useful capability or improvement grounded in a real repository-operations problem.</p>
+            <a class="button button--secondary" data-link="upgrade" target="_blank" rel="noreferrer">Suggest an upgrade</a>
+          </article>
+        </div>
+        <p class="contribute-note">New here? Read <a data-link="contributing" target="_blank" rel="noreferrer">CONTRIBUTING.md</a>, then comment <code>/claim</code> on an available issue.</p>
+      </section>
+
+      <section class="section live-section" id="contributors">
+        <div class="section-heading split-heading">
+          <div>
+            <p class="eyebrow">OPEN-SOURCE ACTIVITY</p>
+            <h2>Contributors</h2>
+            <p>Public repository contribution activity from GitHub. This is not a ranking, score, or measure of contributor quality.</p>
+          </div>
+          <div class="live-control">
+            <span class="live-status" id="contributorFeedStatus">Connecting to GitHub…</span>
+            <a class="button button--secondary" data-link="repo" target="_blank" rel="noreferrer">Repository</a>
+          </div>
+        </div>
+        <div class="contributor-grid" id="contributorFeed" aria-live="polite">
+          <div class="feed-state"><strong>Loading contributors…</strong><p>Reading public repository contribution data.</p></div>
+        </div>
+      </section>
+
+      <section class="section safety-section">
+        <div class="section-heading section-heading--compact">
+          <p class="eyebrow">BUILT FOR MAINTAINER TRUST</p>
+          <h2>Automation should reduce toil without creating surprises.</h2>
+        </div>
+        <div class="safety-grid">
+          <div><strong>Least privilege</strong><span>Workflows request only the permissions they need.</span></div>
+          <div><strong>Deterministic logic</strong><span>Core decisions are testable without live GitHub mutations.</span></div>
+          <div><strong>No silent destruction</strong><span>Consequential repository actions stay explicit and reviewable.</span></div>
+          <div><strong>Untrusted input stays untrusted</strong><span>Contributor text is never treated as executable control data.</span></div>
+        </div>
+      </section>
+
+      <section class="section roadmap-cta">
+        <div>
+          <p class="eyebrow">WHERE THIS GOES</p>
+          <h2>IssueOps today. A repository operations control plane over time.</h2>
+          <p>Assignment lifecycle → pull-request operations → triage → operational history → reusable distribution → GitHub App → multi-repository visibility.</p>
+        </div>
+        <a class="button button--primary" data-link="roadmap" target="_blank" rel="noreferrer">Read the roadmap</a>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div><strong>RepoOps</strong><span>Open-source repository operations for GitHub maintainers.</span></div>
+      <nav aria-label="Footer navigation">
+        <a data-link="changelog" target="_blank" rel="noreferrer">Changelog</a>
+        <a data-link="security" target="_blank" rel="noreferrer">Security</a>
+        <a data-link="contributing" target="_blank" rel="noreferrer">Contributing</a>
+      </nav>
+      <small>© <span id="year"></span> RepoOps · MIT</small>
+    </footer>
+
+    <script type="module" src="./app.mjs"></script>
+  </body>
+</html>

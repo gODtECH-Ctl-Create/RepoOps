@@ -1,0 +1,76 @@
+name: Propose a problem
+description: Describe a real repository-operations problem, maintainer pain point, or contributor workflow gap before proposing a solution
+title: "[Problem]: "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve RepoOps. Start with the problem and its impact; solution ideas are optional.
+
+        Do not include secrets, credentials, private repository data, or exploitable vulnerability details here. Use SECURITY.md for sensitive security reports.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you seeing?
+      description: Describe the repository-operations, maintainer, or contributor workflow problem clearly.
+      placeholder: Maintainers currently have to manually inspect every claimed issue to know whether...
+    validations:
+      required: true
+
+  - type: textarea
+    id: affected
+    attributes:
+      label: Who or what workflow is affected?
+      description: Explain which maintainer/contributor workflow, repository state, or automation path is affected.
+      placeholder: Maintainers reviewing contributor work across...
+    validations:
+      required: true
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: How is this handled today?
+      description: Describe the current workaround, manual process, or missing behavior.
+      placeholder: Today maintainers manually...
+    validations:
+      required: true
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: Why does this matter?
+      description: Explain the operational cost, confusion, risk, delay, or repeated work caused by the problem.
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence or examples
+      description: Optional public examples, screenshots, workflow output, or links that make the problem easier to understand. Do not include sensitive data.
+
+  - type: textarea
+    id: ideas
+    attributes:
+      label: Possible solution ideas
+      description: Optional. Describe ideas only after the problem is clear; maintainers may choose a different solution.
+
+  - type: textarea
+    id: safety
+    attributes:
+      label: Safety, permissions, or destructive-action considerations
+      description: Optional. Note whether solving this might require new GitHub permissions, repository mutations, automation retries, or destructive actions.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues and roadmap items for the same problem.
+          required: true
+        - label: This submission describes a concrete problem before prescribing a feature.
+          required: true
+        - label: This report does not contain secrets or private vulnerability details.
+          required: true
