@@ -113,3 +113,10 @@ when needed. Assignment reminder/expiry settings are policy, not release automat
 `src/github/linked-pull-requests.mjs` collects explicit GitHub closing/manual PR
 relationships with cursor pagination. Its normalized read-only result is reusable
 by lifecycle policies and future PR queues. See [relationship rules](linked-pull-requests.md).
+
+## Scheduled reminders
+
+Collection → pure stale decision → fresh verification → authenticated reminder
+receipt. The scheduled scanner and commands serialize through the same repository
+mutation queue. See [stale reminders](stale-assignments.md) for timeline evidence,
+window identity, non-destructive semantics and safe live validation.

@@ -38,8 +38,9 @@ before retrying; do not blindly replay old destructive operations.
 ## Limits
 
 This is recoverable, serialized execution, not transactional exactly-once delivery.
-Keep the existing per-issue Actions concurrency group and `cancel-in-progress:
-false`. GitHub can replace pending concurrency jobs; this is not a durable queue.
+Command and scanner jobs share a repository-wide Actions concurrency group with
+`cancel-in-progress: false` and `queue: max`. The queue is bounded and is not a
+durable event store; #28 tracks overflow and delivery reconciliation.
 Independent webhook workers must supply serialization before using this helper.
 Concurrent external/manual edits cannot be locked by these APIs; ownership/state
 checks detect observed conflicts but cannot eliminate the read/write race.

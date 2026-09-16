@@ -77,7 +77,7 @@ and unknown settings are rejected. Limits keep UTC day arithmetic bounded.
 
 `autoRelease` is a boolean and defaults to false. These settings configure policy;
 this version does not implement automatic expiry or release, even when true is
-explicitly configured. The first scheduled scanner remains reminder-only.
+explicitly configured. The scheduled scanner remains reminder-only. See [stale reminders](stale-assignments.md) for window and linked-PR rules.
 
 `labels.ready` defaults to `status: ready`. It and `labels.inProgress` must be
 non-empty trimmed strings with distinct names (case-insensitive). Existing

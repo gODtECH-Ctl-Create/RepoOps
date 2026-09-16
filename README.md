@@ -95,7 +95,7 @@ The architecture keeps event parsing, decisions, and GitHub mutations separate s
 | Strict `.repoops.yml` validation | ✅ Implemented |
 | Event fixtures + local simulation | ✅ Implemented |
 | GitHub Pages product site + contributor hub | ✅ Implemented |
-| Scheduled stale-assignment reminders | 🚧 Current P0 work |
+| Scheduled stale-assignment reminders | ✅ Implemented — reminder-only |
 | Contributor work limits / PR attention / event history | 🗺️ Roadmap |
 
 > [!IMPORTANT]
@@ -211,6 +211,16 @@ Dashboard and analytics
 RepoOps is **pre-1.0**. Package version: **0.2.0**. No official GitHub Release has been published yet.
 
 See the [product roadmap](docs/roadmap.md), [issue taxonomy](docs/issue-taxonomy.md), [release policy](docs/releases.md), and [changelog](CHANGELOG.md).
+
+## Assignment safety and reminders
+
+Claims transition ready → in-progress; unclaim restores ready when work is open
+and available, and close clears active states. Repeated deliveries use authenticated
+operation receipts. Scheduled reminders consider bot-authored assignment age and
+explicit implementation PR links; they never automatically release work.
+
+See [assignment configuration](docs/configuration.md), [retry recovery](docs/idempotency.md),
+and [scanner operation and live validation](docs/stale-assignments.md).
 
 ---
 

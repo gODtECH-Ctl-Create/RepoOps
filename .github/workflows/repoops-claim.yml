@@ -10,13 +10,13 @@ permissions:
   contents: read
   issues: write
 
-concurrency:
-  group: repoops-${{ github.event.issue.number }}
-  cancel-in-progress: false
-
 jobs:
   handle:
     if: ${{ github.event.issue.pull_request == null && (github.event_name == 'issues' || startsWith(github.event.comment.body, '/')) }}
+    concurrency:
+      group: repoops-mutations-${{ github.repository }}
+      cancel-in-progress: false
+      queue: max
     runs-on: ubuntu-latest
 
     steps:

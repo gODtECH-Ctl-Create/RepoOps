@@ -80,7 +80,7 @@ Do not weaken security controls merely to make a workflow pass.
 
 ## Contributor ownership
 
-Claiming an issue does not permanently reserve it. RepoOps will eventually support assignment timeouts and follow-up. Until then, communicate if you are blocked or no longer working on an issue.
+Claiming an issue does not permanently reserve it. RepoOps now sends configured stale-work reminders when no linked implementation PR demonstrates activity; it does not automatically release your assignment. Share progress or use `/unclaim` if you are no longer working on an issue. `/keep` is planned in #7.
 
 ## Review expectations
 

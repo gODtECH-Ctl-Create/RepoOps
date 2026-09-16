@@ -29,14 +29,19 @@ Exit criteria:
 
 Goal: stop claimed issues from disappearing into a backlog.
 
-Planned capabilities:
+Implemented foundations:
 
-- stale-assignment detection
-- configurable reminder windows
+- idempotent event operations and explicit ambiguous-retry recovery
+- coherent ready/in-progress assignment transitions
+- configurable reminder windows and non-destructive expiry policy
+- explicit linked-PR detection
+- scheduled stale-assignment reminders (no automatic release)
+
+Remaining capabilities:
+
 - `/keep` command
 - `/blocked` command and blocked reason
-- assignment expiry and safe release
-- linked-PR detection
+- assignment expiry and safe release (separate future approval/policy)
 - contributor active-work limits
 - maintainer attention queue
 - lifecycle event audit entries
