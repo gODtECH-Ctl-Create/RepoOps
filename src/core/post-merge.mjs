@@ -45,8 +45,15 @@ function resourceLinks(guidance = {}) {
   return links;
 }
 
+function validateCompletionIdentity({ contributor, issueNumber, contributionStatus }) {
+  if (typeof contributor !== "string" || !contributor || !Number.isSafeInteger(issueNumber) || issueNumber < 1 || !["first", "returning", "unknown"].includes(contributionStatus)) {
+    throw new Error("Invalid post-merge completion identity");
+  }
+}
+
 export function buildPostMergeMessage({ contributor, issueNumber, pullRequestNumber, contributionStatus = "unknown", suggestions = [], guidance = {} }) {
-  if (typeof contributor !== "string" || !contributor || !Number.isSafeInteger(issueNumber) || issueNumber < 1 || !Number.isSafeInteger(pullRequestNumber) || pullRequestNumber < 1 || !["first", "returning", "unknown"].includes(contributionStatus) || !Array.isArray(suggestions)) {
+  validateCompletionIdentity({ contributor, issueNumber, contributionStatus });
+  if (!Number.isSafeInteger(pullRequestNumber) || pullRequestNumber < 1 || !Array.isArray(suggestions)) {
     throw new Error("Invalid post-merge message input");
   }
 
@@ -76,7 +83,28 @@ export function buildPostMergeMessage({ contributor, issueNumber, pullRequestNum
   return parts.join("\n\n");
 }
 
+export function buildPullRequestPostMergeMessage({ contributor, issueNumber, contributionStatus = "unknown" }) {
+  validateCompletionIdentity({ contributor, issueNumber, contributionStatus });
+  const first = contributionStatus === "first";
+  const parts = [
+    first
+      ? `🎉 Welcome to RepoOps, @${contributor} — your first contribution has been merged!`
+      : `✅ Thanks, @${contributor} — your contribution has been merged.`,
+    `Thanks for completing #${issueNumber} through this pull request.`
+  ];
+
+  if (first) parts.push("Welcome to the RepoOps contributor community.");
+  parts.push(`The detailed completion follow-up, contributor resources, and any available next work are recorded on #${issueNumber}.`);
+  parts.push("Thanks for helping build RepoOps. 🚀");
+  return parts.join("\n\n");
+}
+
 export function postMergeMarker(issueId, pullRequestNumber) {
   if (!Number.isSafeInteger(issueId) || issueId < 1 || !Number.isSafeInteger(pullRequestNumber) || pullRequestNumber < 1) throw new Error("Invalid post-merge marker identity");
   return `<!-- repoops:post-merge:v1:${issueId}:${pullRequestNumber} -->`;
+}
+
+export function postMergePullRequestMarker(issueId, pullRequestNumber) {
+  if (!Number.isSafeInteger(issueId) || issueId < 1 || !Number.isSafeInteger(pullRequestNumber) || pullRequestNumber < 1) throw new Error("Invalid post-merge pull request marker identity");
+  return `<!-- repoops:post-merge-pr:v1:${issueId}:${pullRequestNumber} -->`;
 }
