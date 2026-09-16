@@ -8,6 +8,8 @@ The format follows a Keep a Changelog-style categories and the project intends t
 
 ### Added
 
+- Deterministic completed-contribution history projection from operational events and authoritative linked-PR relationships, including conservative first/returning/unknown contributor classification.
+
 - One-time contributor guidance on ordinary comments for explicitly ready issues, directing contributors to `/claim` and configured problem/upgrade proposal routes without inferring ownership from natural language.
 
 - Configurable contributor onboarding on successful `/claim`, including repository-owned requirements, setup/check commands, and contributor/development/architecture links without executing configured text.
