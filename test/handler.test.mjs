@@ -111,9 +111,8 @@ test("claim respects RepoOps-managed active-work limits while maintainers remain
     client.repository = "owner/repo";
     client.botId = 41898282;
     client.issue.labels = [{ name: "status: ready" }];
-    const target = structuredClone(client.issue);
     const active = { id: 70, number: 7, state: "open", assignees: [{ login: "alice" }], labels: [{ name: "status: in-progress" }] };
-    client.getIssue = async (number) => structuredClone(number === 7 ? active : target);
+    client.getIssue = async (number) => structuredClone(number === 7 ? active : client.issue);
     client.paginate = async (path) => {
       if (path.includes("issues?state=open")) return [{ number: 7 }];
       if (path.endsWith("/issues/7/timeline")) return [{ id: 701, event: "assigned", created_at: "2026-09-16T08:00:00Z", assignee: { login: "alice" }, actor: { id: 41898282, type: "Bot" } }];
