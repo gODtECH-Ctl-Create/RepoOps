@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 
 import { parseCommand, routeCommand } from "../src/core/commands.mjs";
 import { parseRepoOpsConfig } from "../src/core/config.mjs";
@@ -99,4 +100,9 @@ test("plans cleanup for a closed claimed issue", () => {
       inProgressLabel: "status: in-progress"
     }
   );
+});
+
+test("IssueOps has permission to acknowledge merged pull requests", async () => {
+  const workflow = await readFile(new URL("../.github/workflows/repoops-claim.yml", import.meta.url), "utf8");
+  assert.match(workflow, /pull-requests:\s*write/);
 });
