@@ -4,6 +4,7 @@ export const DEFAULT_CONFIG = Object.freeze({
   commands: Object.freeze({ claim: true, unclaim: true }),
   labels: Object.freeze({ inProgress: "status: in-progress", ready: "status: ready" }),
   assignments: Object.freeze({ reminderAfterDays: 3, expireAfterDays: 7, autoRelease: false }),
+  contributorLimits: Object.freeze({ maxActiveAssignments: 0, limitMaintainers: false }),
   contributorGuidance: Object.freeze({
     enabled: true,
     requirements: "",
@@ -17,11 +18,12 @@ export const DEFAULT_CONFIG = Object.freeze({
   })
 });
 
-const allowedSections = new Set(["commands", "labels", "assignments", "contributorGuidance"]);
+const allowedSections = new Set(["commands", "labels", "assignments", "contributorLimits", "contributorGuidance"]);
 const allowedKeys = {
   commands: new Set(["claim", "unclaim"]),
   labels: new Set(["inProgress", "ready"]),
   assignments: new Set(["reminderAfterDays", "expireAfterDays", "autoRelease"]),
+  contributorLimits: new Set(["maxActiveAssignments", "limitMaintainers"]),
   contributorGuidance: new Set([
     "enabled",
     "requirements",
@@ -74,6 +76,7 @@ export function parseRepoOpsConfig(text = "") {
     commands: { ...DEFAULT_CONFIG.commands },
     labels: { ...DEFAULT_CONFIG.labels },
     assignments: { ...DEFAULT_CONFIG.assignments },
+    contributorLimits: { ...DEFAULT_CONFIG.contributorLimits },
     contributorGuidance: { ...DEFAULT_CONFIG.contributorGuidance }
   };
 
@@ -110,7 +113,10 @@ export function parseRepoOpsConfig(text = "") {
     const path = `${section}.${key}`;
     if (seen.has(path)) throw new Error(`Duplicate key ${path}`);
     seen.add(path);
-    result[section][key] = parseScalar(value, section === "assignments" && key !== "autoRelease");
+    const numeric =
+      (section === "assignments" && key !== "autoRelease") ||
+      (section === "contributorLimits" && key === "maxActiveAssignments");
+    result[section][key] = parseScalar(value, numeric);
   }
 
   if (typeof result.commands.claim !== "boolean" || typeof result.commands.unclaim !== "boolean") {
@@ -126,6 +132,13 @@ export function parseRepoOpsConfig(text = "") {
   }
   if (result.assignments.expireAfterDays <= result.assignments.reminderAfterDays) throw new Error("expireAfterDays must exceed reminderAfterDays");
   if (typeof result.assignments.autoRelease !== "boolean") throw new Error("assignments.autoRelease must be true or false");
+
+  if (!Number.isSafeInteger(result.contributorLimits.maxActiveAssignments) || result.contributorLimits.maxActiveAssignments < 0 || result.contributorLimits.maxActiveAssignments > 100) {
+    throw new Error("contributorLimits.maxActiveAssignments must be an integer from 0 to 100");
+  }
+  if (typeof result.contributorLimits.limitMaintainers !== "boolean") {
+    throw new Error("contributorLimits.limitMaintainers must be true or false");
+  }
 
   if (typeof result.contributorGuidance.enabled !== "boolean") {
     throw new Error("contributorGuidance.enabled must be true or false");
@@ -149,6 +162,7 @@ export async function loadRepoOpsConfig(path = ".repoops.yml") {
         commands: { ...DEFAULT_CONFIG.commands },
         labels: { ...DEFAULT_CONFIG.labels },
         assignments: { ...DEFAULT_CONFIG.assignments },
+        contributorLimits: { ...DEFAULT_CONFIG.contributorLimits },
         contributorGuidance: { ...DEFAULT_CONFIG.contributorGuidance }
       };
     }
