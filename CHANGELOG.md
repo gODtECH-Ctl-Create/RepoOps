@@ -8,6 +8,8 @@ The format follows Keep a Changelog-style categories and the project intends to 
 
 ### Added
 
+- Paginated explicit linked-PR detection, normalized open/merged/closed results, and read-only live inspection.
+
 - Validated assignment reminder/expiry policy with non-destructive defaults.
 
 - Trusted operation keys, authenticated progress receipts, fresh-state mutation checks, and explicit ambiguous-retry errors.
