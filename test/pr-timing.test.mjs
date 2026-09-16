@@ -19,18 +19,18 @@ const events = [
 test("calculates maintainer and author waiting ages from fixed UTC timestamps", () => {
   const result = calculatePullRequestTiming({ now: "2026-01-01T07:00:00Z", events });
   assert.equal(result.currentState, "waiting-for-review");
-  assert.equal(result.currentStateSince, t4);
+  assert.equal(result.currentStateSince, "2026-01-01T06:30:00.000Z");
   assert.equal(result.reviewAge, 30 * 60 * 1000);
   assert.equal(result.authorWaitAge, null);
   assert.deepEqual(result.responseLatency.maintainer, {
     milliseconds: 2 * 60 * 60 * 1000,
-    startedAt: t2,
-    endedAt: t3
+    startedAt: "2026-01-01T03:00:00.000Z",
+    endedAt: "2026-01-01T05:00:00.000Z"
   });
   assert.deepEqual(result.responseLatency.author, {
-    milliseconds: 1 * 60 * 60 * 1000,
-    startedAt: t1,
-    endedAt: t2
+    milliseconds: 90 * 60 * 1000,
+    startedAt: "2026-01-01T05:00:00.000Z",
+    endedAt: "2026-01-01T06:30:00.000Z"
   });
 });
 
