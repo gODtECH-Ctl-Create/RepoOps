@@ -101,3 +101,39 @@ test("successful claim includes configured onboarding once and denied claims do 
   assert.equal(blocked.comments.length, 1);
   assert.doesNotMatch(blocked.comments[0].body, /Welcome, @alice/);
 });
+
+test("claim respects RepoOps-managed active-work limits while maintainers remain exempt", async () => {
+  const config = structuredClone(DEFAULT_CONFIG);
+  config.contributorLimits = { maxActiveAssignments: 1, limitMaintainers: false };
+
+  function limitedClient() {
+    const client = fakeClient();
+    client.repository = "owner/repo";
+    client.botId = 41898282;
+    client.issue.labels = [{ name: "status: ready" }];
+    const target = structuredClone(client.issue);
+    const active = { id: 70, number: 7, state: "open", assignees: [{ login: "alice" }], labels: [{ name: "status: in-progress" }] };
+    client.getIssue = async (number) => structuredClone(number === 7 ? active : target);
+    client.paginate = async (path) => {
+      if (path.includes("issues?state=open")) return [{ number: 7 }];
+      if (path.endsWith("/issues/7/timeline")) return [{ id: 701, event: "assigned", created_at: "2026-09-16T08:00:00Z", assignee: { login: "alice" }, actor: { id: 41898282, type: "Bot" } }];
+      throw new Error(`Unexpected path ${path}`);
+    };
+    return client;
+  }
+
+  const contributor = limitedClient();
+  const contributorEvent = event(40);
+  contributorEvent.comment.author_association = "NONE";
+  await handleIssueComment(contributorEvent, contributor, config);
+  assert.equal(contributor.calls.includes("assign"), false);
+  assert.match(contributor.comments[0].body, /#7/);
+  assert.match(contributor.comments[0].body, /use \/unclaim/);
+
+  const maintainer = limitedClient();
+  const maintainerEvent = event(41);
+  maintainerEvent.comment.author_association = "OWNER";
+  maintainer.paginate = async () => { throw new Error("maintainer exemption should not scan active work"); };
+  await handleIssueComment(maintainerEvent, maintainer, config);
+  assert.equal(maintainer.calls.includes("assign"), true);
+});
