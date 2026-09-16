@@ -2,11 +2,13 @@
 
 RepoOps uses issue metadata to keep a growing contributor backlog understandable and reviewable.
 
-Each implementation issue should communicate three things:
+Each implementation issue should communicate five things:
 
 1. the product area it belongs to
 2. the expected contributor difficulty
-3. the current workflow state
+3. its product priority
+4. whether it is blocked by or blocking another issue
+5. the current workflow state
 
 ## Area labels
 
@@ -32,6 +34,35 @@ Recommended area labels:
 - `difficulty: advanced` — security, concurrency, persistence, auth, rate limits, distributed workflows, or architecture changes
 
 Difficulty describes the work, not the contributor.
+
+## Priority labels
+
+Priority describes product sequencing and urgency, not contributor importance.
+
+- `priority: p0` — critical foundation or blocker for the current milestone; should be resolved before dependent work proceeds
+- `priority: p1` — high-priority work for the current or immediately following milestone
+- `priority: p2` — important planned work that does not currently block a milestone
+- `priority: p3` — valid roadmap work intended for a later stage or lower-urgency cycle
+
+Only one priority label should normally be applied to an engineering issue.
+
+## Dependency labels
+
+Use dependency labels together with explicit issue references in the issue body.
+
+- `dependency: blocked` — this issue cannot proceed until one or more referenced issues are completed
+- `dependency: blocks` — completing this issue unlocks one or more other roadmap items
+
+The label is not the dependency graph by itself. The issue body should say exactly what the relationship is, for example:
+
+```text
+## Dependencies
+
+Blocked by #12 and #14.
+Blocks #15.
+```
+
+Do not create labels such as `blocked-by-12`; issue references are the durable source of the relationship.
 
 ## Workflow labels
 
