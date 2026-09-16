@@ -66,3 +66,8 @@ New commands should:
 - respect repository configuration and least-privilege permissions
 
 RepoOps should prefer explicit command syntax over guessing contributor intent.
+
+Command deliveries use a bot-authored operation receipt that becomes the final
+confirmation. Retries of the same comment do not repeat completed operations.
+Commands require a currently open issue. See [recovery guidance](idempotency.md)
+if a receipt remains pending after a workflow failure.

@@ -8,6 +8,8 @@ The format follows Keep a Changelog-style categories and the project intends to 
 
 ### Added
 
+- Trusted operation keys, authenticated progress receipts, fresh-state mutation checks, and explicit ambiguous-retry errors.
+
 - `/claim` issue assignment command
 - `/unclaim` assignment release command
 - automatic cleanup of RepoOps-managed assignment state when an issue closes

@@ -99,3 +99,9 @@ GitHub remains authoritative for repository objects, while RepoOps events captur
 Treat issue bodies, comments, branch names, pull request data, and other contributor-controlled fields as untrusted input.
 
 Never interpolate untrusted GitHub content into shell commands or dynamically execute it.
+## Idempotent operations
+
+`src/core/idempotency.mjs` orchestrates injected stores and mutation steps without
+calling GitHub. `src/github/operations.mjs` stores authenticated operation receipts
+and reconciles fresh issue state. See [idempotency and recovery](idempotency.md)
+for checkpoint semantics, ambiguous failures, and concurrency limits.

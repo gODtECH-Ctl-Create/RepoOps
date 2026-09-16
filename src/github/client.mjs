@@ -1,10 +1,11 @@
 const apiBase = "https://api.github.com";
 
 export class GitHubClient {
-  constructor({ token, repository }) {
+  constructor({ token, repository, botId = 41898282 }) {
     if (!token) throw new Error("GITHUB_TOKEN is required");
     if (!repository?.includes("/")) throw new Error("GITHUB_REPOSITORY must be owner/repo");
 
+    this.botId = botId;
     this.token = token;
     this.repository = repository;
   }
@@ -23,7 +24,9 @@ export class GitHubClient {
 
     if (!response.ok) {
       const text = await response.text();
-      throw new Error(`GitHub API failed ${response.status}: ${text}`);
+      const error = new Error(`GitHub API failed ${response.status}: ${text}`);
+      error.status = response.status;
+      throw error;
     }
 
     if (response.status === 204) return null;
@@ -54,14 +57,37 @@ export class GitHubClient {
 
   async removeLabel(issueNumber, label) {
     const encoded = encodeURIComponent(label);
-    try {
-      return await this.request(`/repos/${this.repository}/issues/${issueNumber}/labels/${encoded}`, {
-        method: "DELETE"
-      });
-    } catch (error) {
-      if (String(error?.message).includes("404")) return null;
-      throw error;
+    return this.request(`/repos/${this.repository}/issues/${issueNumber}/labels/${encoded}`, {
+      method: "DELETE"
+    });
+  }
+
+  async getIssue(issueNumber) {
+    const issue = await this.request(`/repos/${this.repository}/issues/${issueNumber}`);
+    if (!issue || !["open", "closed"].includes(issue.state) || !Array.isArray(issue.assignees) || issue.assignees.some((a) => typeof a?.login !== "string") || !Array.isArray(issue.labels) || issue.labels.some((l) => typeof (typeof l === "string" ? l : l?.name) !== "string")) throw new Error("Malformed GitHub issue response");
+    return issue;
+  }
+
+  async paginate(path) {
+    const result = [];
+    for (let page = 1; ; page++) {
+      const items = await this.request(`${path}${path.includes("?") ? "&" : "?"}per_page=100&page=${page}`);
+      if (!Array.isArray(items)) throw new Error("Malformed GitHub paginated response");
+      result.push(...items);
+      if (items.length < 100) return result;
     }
+  }
+
+  async listComments(issueNumber) {
+    const comments = await this.paginate(`/repos/${this.repository}/issues/${issueNumber}/comments`);
+    if (comments.some((c) => !Number.isSafeInteger(c?.id) || typeof c.body !== "string" || !Number.isSafeInteger(c.user?.id))) throw new Error("Malformed GitHub comment response");
+    return comments;
+  }
+
+  isOwnComment(comment) { return comment?.user?.id === this.botId && comment?.user?.type === "Bot"; }
+
+  updateComment(commentId, body) {
+    return this.request(`/repos/${this.repository}/issues/comments/${commentId}`, { method: "PATCH", body: JSON.stringify({ body }) });
   }
 
   addComment(issueNumber, body) {
