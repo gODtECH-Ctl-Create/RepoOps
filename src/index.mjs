@@ -5,6 +5,8 @@ import { routeCommand } from "./core/commands.mjs";
 import { loadRepoOpsConfig } from "./core/config.mjs";
 import { decideClosedIssueCleanup } from "./core/lifecycle.mjs";
 import { decideUnclaim } from "./core/unclaim.mjs";
+import { executeOperation, operationKey } from "./core/idempotency.mjs";
+import { commentOperationStore, issueMutationSteps } from "./github/operations.mjs";
 import { GitHubClient } from "./github/client.mjs";
 
 async function readEvent() {
@@ -20,72 +22,48 @@ function eventNameFor(event) {
   return "unknown";
 }
 
-async function handleIssueComment(event, client, config) {
-  const issueNumber = event.issue?.number;
-  if (!issueNumber) return console.log("RepoOps: no issue found in comment event.");
-
+export async function handleIssueComment(event, client, config) {
+  if (event.action !== "created" || event.issue?.pull_request) return;
   const routed = routeCommand(event.comment?.body ?? "", config);
-  if (routed.type === "ignore") {
-    console.log(`RepoOps: ignored comment (${routed.reason}).`);
-    return;
-  }
-
-  const common = {
-    actor: event.comment?.user?.login ?? event.sender?.login ?? "",
-    assignees: event.issue?.assignees ?? [],
-    isPullRequest: Boolean(event.issue?.pull_request),
-    label: config.labels.inProgress
-  };
-
-  if (routed.command.name === "/claim") {
-    const decision = decideClaim({ body: event.comment?.body ?? "", ...common });
-
-    if (decision.type === "ignore") return console.log(`RepoOps: ignored claim (${decision.reason}).`);
-    if (decision.type === "already-owned" || decision.type === "unavailable") {
-      await client.addComment(issueNumber, decision.message);
-      return console.log(`RepoOps: ${decision.type}.`);
-    }
-
-    await client.ensureLabel(decision.label, "1d76db", "Issue currently claimed by a contributor");
-    await client.assignIssue(issueNumber, decision.actor);
-    await client.addLabels(issueNumber, [decision.label]);
-    await client.addComment(issueNumber, decision.message);
-    return console.log(`RepoOps: assigned #${issueNumber} to @${decision.actor}.`);
-  }
-
-  const decision = decideUnclaim(common);
-  if (decision.type === "ignore") return console.log(`RepoOps: ignored unclaim (${decision.reason}).`);
-  if (decision.type === "not-owned" || decision.type === "forbidden") {
-    await client.addComment(issueNumber, decision.message);
-    return console.log(`RepoOps: ${decision.type}.`);
-  }
-
-  await client.removeAssignees(issueNumber, [decision.actor]);
-  await client.removeLabel(issueNumber, decision.label);
-  await client.addComment(issueNumber, decision.message);
-  console.log(`RepoOps: released #${issueNumber} from @${decision.actor}.`);
+  if (routed.type === "ignore") return;
+  const key = operationKey({ repositoryId: event.repository?.id, issueId: event.issue?.id, event: "issue_comment", action: "created", sourceId: event.comment?.id });
+  const actor = event.comment?.user?.login;
+  if (!actor || !Number.isSafeInteger(event.comment?.user?.id)) throw new Error("Malformed comment actor");
+  const issueNumber = event.issue.number;
+  return executeOperation({
+    key, store: commentOperationStore(client, issueNumber),
+    prepare: async () => {
+      const issue = await client.getIssue(issueNumber);
+      if (issue.id !== event.issue.id || issue.pull_request) throw new Error("Issue identity mismatch");
+      if (issue.state !== "open") return { state: issue.state, message: "RepoOps: commands require an open issue.", mutations: [] };
+      const common = { actor, assignees: issue.assignees, label: config.labels.inProgress };
+      const decision = routed.command.name === "/claim"
+        ? decideClaim({ body: "/claim", ...common }) : decideUnclaim(common);
+      const mutations = [];
+      let expectedAssignees = issue.assignees.map((a) => a.login);
+      if (decision.type === "claim" || decision.type === "already-owned") {
+        if (decision.type === "claim") mutations.push({ type: "assign", login: actor });
+        expectedAssignees = [...new Set([...expectedAssignees, actor])];
+        mutations.push({ type: "add-label", label: config.labels.inProgress });
+      }
+      if (decision.type === "unclaim") {
+        mutations.push({ type: "unassign", login: actor }, { type: "remove-label", label: config.labels.inProgress });
+        expectedAssignees = expectedAssignees.filter((a) => a !== actor);
+      }
+      return { state: issue.state, message: decision.message, expectedAssignees, mutations };
+    },
+    steps: (plan) => issueMutationSteps(client, issueNumber, plan)
+  });
 }
 
-async function handleIssueLifecycle(event, client, config) {
-  if (event.action !== "closed" || !event.issue?.number) {
-    console.log("RepoOps: lifecycle event requires no action.");
-    return;
-  }
-
-  const cleanup = decideClosedIssueCleanup({
-    assignees: event.issue.assignees ?? [],
-    labels: event.issue.labels ?? [],
-    inProgressLabel: config.labels.inProgress
-  });
-
-  if (cleanup.assignees.length) {
-    await client.removeAssignees(event.issue.number, cleanup.assignees);
-  }
-  if (cleanup.removeInProgressLabel) {
-    await client.removeLabel(event.issue.number, cleanup.inProgressLabel);
-  }
-
-  console.log(`RepoOps: cleaned lifecycle state for closed issue #${event.issue.number}.`);
+export async function handleIssueLifecycle(event, client, config) {
+  if (event.action !== "closed" || !event.issue?.number || event.issue.pull_request) return;
+  // Close cleanup reconciles current state rather than replaying snapshot assignments.
+  const issue = await client.getIssue(event.issue.number);
+  if (issue.state !== "closed") return;
+  const cleanup = decideClosedIssueCleanup({ assignees: issue.assignees, labels: issue.labels, inProgressLabel: config.labels.inProgress });
+  if (cleanup.assignees.length) await client.removeAssignees(event.issue.number, cleanup.assignees);
+  if (cleanup.removeInProgressLabel) await client.removeLabel(event.issue.number, cleanup.inProgressLabel);
 }
 
 export async function runRepoOps(event, { token, repository } = {}) {
