@@ -4,7 +4,7 @@ export const LINKS = Object.freeze({
   repository: `https://github.com/${REPOSITORY}`,
   readyIssues: `https://github.com/${REPOSITORY}/issues?q=is%3Aissue+is%3Aopen+label%3A%22status%3A+ready%22+no%3Aassignee`,
   goodFirstIssues: `https://github.com/${REPOSITORY}/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22+label%3A%22status%3A+ready%22+no%3Aassignee`,
-  problemProposal: `https://github.com/${REPOSITORY}/issues/new?template=bug.yml`,
+  problemProposal: `https://github.com/${REPOSITORY}/issues/new?template=problem.yml`,
   upgradeProposal: `https://github.com/${REPOSITORY}/issues/new?template=feature.yml`,
   contributing: `https://github.com/${REPOSITORY}/blob/main/CONTRIBUTING.md`,
   roadmap: `https://github.com/${REPOSITORY}/blob/main/docs/roadmap.md`,
