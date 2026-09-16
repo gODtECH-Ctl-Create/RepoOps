@@ -10,6 +10,10 @@ assignments:
   expireAfterDays: 7
   autoRelease: false
 
+contributorLimits:
+  maxActiveAssignments: 2
+  limitMaintainers: false
+
 contributorGuidance:
   enabled: true
   requirements: "Node.js 20+ and Git"
