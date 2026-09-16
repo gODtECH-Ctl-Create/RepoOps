@@ -27,7 +27,7 @@ npm run check
 
 1. Find an available issue.
 2. Comment `/claim`.
-3. Create a branch from the latest `main`.
+3. Create a branch from the latest `MASTER`.
 4. Implement the smallest complete change.
 5. Add or update tests.
 6. Run `npm run check`.
@@ -36,7 +36,7 @@ npm run check
 Example:
 
 ```bash
-git checkout main
+git checkout MASTER
 git pull
 git checkout -b feat/123-unclaim-command
 ```

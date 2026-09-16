@@ -40,4 +40,4 @@ RepoOps aims to follow these rules:
 
 ## Supported versions
 
-Until RepoOps reaches a stable release, security fixes are applied to the latest code on `main`. A version support matrix will be added when versioned releases begin.
+Until RepoOps reaches a stable release, security fixes are applied to the latest code on `MASTER`. A version support matrix will be added when versioned releases begin.

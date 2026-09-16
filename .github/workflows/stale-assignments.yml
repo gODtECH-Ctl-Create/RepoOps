@@ -17,7 +17,7 @@ on:
         type: boolean
         default: false
   push:
-    branches: [main]
+    branches: [MASTER]
     paths:
       - 'src/core/stale-assignment.mjs'
       - 'src/github/stale-scanner.mjs'
