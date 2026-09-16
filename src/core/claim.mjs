@@ -2,7 +2,7 @@ export function normalizeCommand(body = "") {
   return body.trim().split(/\s+/)[0]?.toLowerCase() ?? "";
 }
 
-export function decideClaim({ body, actor, assignees = [], isPullRequest = false }) {
+export function decideClaim({ body, actor, assignees = [], isPullRequest = false, label = "status: in-progress" }) {
   if (normalizeCommand(body) !== "/claim") {
     return { type: "ignore", reason: "not-claim-command" };
   }
@@ -39,7 +39,7 @@ export function decideClaim({ body, actor, assignees = [], isPullRequest = false
   return {
     type: "claim",
     actor,
-    label: "status: in-progress",
+    label,
     message: `✅ @${actor} claimed this issue. RepoOps assigned it and marked it as in progress.`
   };
 }

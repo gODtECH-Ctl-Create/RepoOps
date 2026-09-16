@@ -1,0 +1,6 @@
+# RepoOps repository policy
+commands:
+  claim: true
+  unclaim: true
+labels:
+  inProgress: "status: in-progress"
