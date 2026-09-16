@@ -31,3 +31,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPOOPS_ISSUE_NUMBER: ${{ inputs.issue_number || '9' }}
+      - name: Inspect merged foundation and unrelated mention (RepoOps dogfood)
+        if: github.event_name == 'pull_request' && github.repository == 'gODtECH-Ctl-Create/RepoOps'
+        run: |
+          node scripts/inspect-linked-prs.mjs 24
+          node scripts/inspect-linked-prs.mjs 28
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
