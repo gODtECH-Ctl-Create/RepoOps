@@ -1,0 +1,32 @@
+# Changelog
+
+All notable user-visible changes to RepoOps will be documented in this file.
+
+The format follows Keep a Changelog-style categories and the project intends to use semantic versioning for public releases.
+
+## Unreleased
+
+### Added
+
+- `/claim` issue assignment command
+- `/unclaim` assignment release command
+- automatic cleanup of RepoOps-managed assignment state when an issue closes
+- validated `.repoops.yml` repository configuration
+- slash-command dispatcher
+- deterministic GitHub event fixtures and local simulator
+- contributor, architecture, development, security, and command documentation
+
+### Changed
+
+- IssueOps event handling now routes commands through a reusable command boundary rather than hard-coding `/claim` in the entrypoint.
+
+## 0.1.0
+
+Initial RepoOps proof of concept:
+
+- GitHub Actions IssueOps workflow
+- `/claim` automation
+- GitHub REST API client
+- automated issue assignment and `status: in-progress` label
+- deterministic core tests
+- CI workflow

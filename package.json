@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "test": "node --test",
-    "check": "npm test",
+    "check:scripts": "node --check scripts/simulate.mjs && node --check scripts/sync-labels.mjs",
+    "check": "npm run check:scripts && npm test",
     "simulate": "node scripts/simulate.mjs"
   },
   "engines": {
