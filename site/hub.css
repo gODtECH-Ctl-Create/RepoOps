@@ -1,0 +1,347 @@
+.hub-hero {
+  min-height: 570px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+  align-items: center;
+  gap: 56px;
+  padding-top: 80px;
+}
+
+.hub-hero h1 {
+  font-size: clamp(3.1rem, 6vw, 5.8rem);
+}
+
+.hub-principles {
+  display: grid;
+  gap: 12px;
+}
+
+.hub-principles > div {
+  display: grid;
+  gap: 5px;
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(12, 27, 46, 0.72);
+}
+
+.hub-principles strong {
+  color: var(--cyan);
+  font-size: 0.9rem;
+}
+
+.hub-principles span,
+.finder-summary p,
+.journey-grid p,
+.proposal-card p,
+.help-strip span {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.finder-section {
+  padding-top: 48px;
+}
+
+.quick-routes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.quick-routes button {
+  appearance: none;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 9px 13px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.025);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.quick-routes button:hover {
+  color: var(--text);
+  border-color: var(--line-strong);
+  background: rgba(100, 232, 255, 0.05);
+}
+
+.filter-panel {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(10, 24, 41, 0.72);
+}
+
+.filter-panel label {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.filter-panel select {
+  width: 100%;
+  min-height: 43px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  padding: 9px 11px;
+  background: #0b1a2d;
+  color: var(--text);
+  font: inherit;
+}
+
+.finder-summary {
+  margin: 15px 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.finder-summary > div {
+  display: inline-flex;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.finder-summary strong {
+  color: var(--cyan);
+  font-size: 1.4rem;
+}
+
+.finder-summary span {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.finder-summary p {
+  margin: 0;
+  max-width: 720px;
+  text-align: right;
+}
+
+.hub-issue-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.hub-issue-card {
+  min-height: 285px;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: linear-gradient(150deg, rgba(16, 35, 59, 0.73), rgba(9, 22, 38, 0.78));
+}
+
+.hub-issue-card:hover {
+  border-color: var(--line-strong);
+}
+
+.hub-card-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.state-pill {
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.state-pill--ready {
+  color: var(--green);
+  border: 1px solid rgba(104, 224, 165, 0.25);
+  background: rgba(104, 224, 165, 0.08);
+}
+
+.state-pill--in-progress {
+  color: var(--cyan);
+  border: 1px solid rgba(100, 232, 255, 0.25);
+  background: rgba(100, 232, 255, 0.08);
+}
+
+.state-pill--blocked {
+  color: var(--rose);
+  border: 1px solid rgba(255, 138, 165, 0.24);
+  background: rgba(255, 138, 165, 0.08);
+}
+
+.state-pill--open {
+  color: var(--amber);
+  border: 1px solid rgba(246, 200, 110, 0.24);
+  background: rgba(246, 200, 110, 0.07);
+}
+
+.hub-issue-title {
+  margin-bottom: 16px;
+  font-size: 1.05rem;
+  font-weight: 760;
+  line-height: 1.35;
+}
+
+.hub-issue-title:hover {
+  color: var(--cyan);
+}
+
+.hub-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.hub-card-assignee {
+  margin: 0 0 18px;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.hub-card-actions {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.claim-hint {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.claim-hint code {
+  color: var(--cyan);
+}
+
+.journey-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.journey-grid article,
+.proposal-card {
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(12, 27, 46, 0.68);
+}
+
+.journey-grid article > span {
+  display: inline-block;
+  margin-bottom: 34px;
+  color: var(--cyan);
+  font-family: monospace;
+  font-size: 0.76rem;
+}
+
+.proposal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.proposal-card {
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+}
+
+.proposal-card > span {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  margin-bottom: 48px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  color: var(--cyan);
+  font-family: monospace;
+  font-size: 1.2rem;
+}
+
+.proposal-card .button {
+  margin-top: auto;
+  width: max-content;
+}
+
+.help-strip {
+  margin-bottom: 88px;
+  padding: 28px 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 30px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: rgba(10, 24, 41, 0.76);
+}
+
+.help-strip > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+@media (max-width: 980px) {
+  .hub-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-panel {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .hub-issue-grid,
+  .journey-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  .hub-hero {
+    padding-top: 68px;
+  }
+
+  .filter-panel,
+  .hub-issue-grid,
+  .journey-grid,
+  .proposal-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .finder-summary,
+  .help-strip {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .finder-summary p {
+    text-align: left;
+  }
+
+  .quick-routes button {
+    width: 100%;
+    text-align: left;
+  }
+
+  .proposal-card > span {
+    margin-bottom: 28px;
+  }
+}

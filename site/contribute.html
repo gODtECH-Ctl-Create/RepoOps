@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Find ready RepoOps issues by difficulty, area, and priority, or propose a real repository-operations problem or upgrade."
+    />
+    <meta name="theme-color" content="#07111f" />
+    <title>Contribute to RepoOps</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./hub.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header">
+      <a class="brand" href="./" aria-label="RepoOps home">
+        <span class="brand-mark" aria-hidden="true">R&gt;</span>
+        <span>RepoOps</span>
+      </a>
+      <nav aria-label="Contributor navigation">
+        <a href="#finder">Find work</a>
+        <a href="#journey">How it works</a>
+        <a href="#propose">Propose</a>
+        <a href="./">Product</a>
+      </nav>
+      <a class="button button--ghost header-cta" id="repoLink" target="_blank" rel="noreferrer">GitHub ↗</a>
+    </header>
+
+    <main id="main">
+      <section class="section hub-hero">
+        <div>
+          <p class="eyebrow">CONTRIBUTOR HUB</p>
+          <h1>Find work that is actually <span>ready.</span></h1>
+          <p class="hero-lead">
+            Browse RepoOps work without memorizing GitHub label syntax. Filter the live backlog here, then use GitHub for the authoritative issue conversation, <code>/claim</code>, development, and pull request.
+          </p>
+          <div class="hero-actions">
+            <a class="button button--primary" href="#finder">Find my issue</a>
+            <a class="button button--secondary" id="goodFirstFallback" target="_blank" rel="noreferrer">Good First Issues on GitHub</a>
+          </div>
+        </div>
+        <aside class="hub-principles" aria-label="Contributor hub guarantees">
+          <div><strong>Live repository state</strong><span>Cards come from public GitHub issue data.</span></div>
+          <div><strong>No hidden assignment</strong><span>You still claim work explicitly on GitHub.</span></div>
+          <div><strong>No browser token</strong><span>The public hub does not ship a PAT or secret.</span></div>
+          <div><strong>Blocked stays blocked</strong><span>Unavailable work is never presented as ready to claim.</span></div>
+        </aside>
+      </section>
+
+      <section class="section finder-section" id="finder">
+        <div class="section-heading split-heading">
+          <div>
+            <p class="eyebrow">LIVE ISSUE FINDER</p>
+            <h2>Choose the work you want to see.</h2>
+            <p>Available views exclude pull requests. Ready views also exclude assigned, blocked, and in-progress issues.</p>
+          </div>
+          <div class="live-control">
+            <span class="live-status" id="hubStatus">Connecting to GitHub…</span>
+            <a class="button button--secondary" id="githubFallback" target="_blank" rel="noreferrer">Open this filter on GitHub</a>
+          </div>
+        </div>
+
+        <div class="quick-routes" aria-label="Quick contributor routes">
+          <button type="button" data-route="good-first">I’m new — show Good First Issues</button>
+          <button type="button" data-route="ready">Show all ready issues</button>
+          <button type="button" data-route="in-progress">See work in progress</button>
+          <button type="button" data-route="p1p2">Show P1 / P2 ready work</button>
+        </div>
+
+        <form class="filter-panel" id="issueFilters">
+          <label>
+            <span>Work state</span>
+            <select id="viewFilter" name="view">
+              <option value="ready">Ready to claim</option>
+              <option value="good-first">Good First Issues</option>
+              <option value="in-progress">In progress</option>
+              <option value="all-open">All open issues</option>
+            </select>
+          </label>
+
+          <label>
+            <span>Difficulty</span>
+            <select id="difficultyFilter" name="difficulty">
+              <option value="">Any difficulty</option>
+              <option value="starter">Starter</option>
+              <option value="intermediate">Intermediate</option>
+              <option value="advanced">Advanced</option>
+            </select>
+          </label>
+
+          <label>
+            <span>Area</span>
+            <select id="areaFilter" name="area">
+              <option value="">Any area</option>
+            </select>
+          </label>
+
+          <label>
+            <span>Priority</span>
+            <select id="priorityFilter" name="priority">
+              <option value="">Any priority</option>
+              <option value="p1p2">P1 / P2</option>
+              <option value="p0">P0</option>
+              <option value="p1">P1</option>
+              <option value="p2">P2</option>
+              <option value="p3">P3</option>
+            </select>
+          </label>
+        </form>
+
+        <div class="finder-summary">
+          <div><strong id="resultCount">0</strong><span>matching issues</span></div>
+          <p id="finderExplanation">Ready work is open, unassigned, unblocked, and marked <code>status: ready</code>.</p>
+        </div>
+
+        <div class="hub-issue-grid" id="hubIssueFeed" aria-live="polite" aria-busy="true">
+          <div class="feed-state"><strong>Loading repository issues…</strong><p>Reading bounded public GitHub issue data.</p></div>
+        </div>
+      </section>
+
+      <section class="section journey-section" id="journey">
+        <div class="section-heading">
+          <p class="eyebrow">CONTRIBUTOR JOURNEY</p>
+          <h2>GitHub stays the source of truth.</h2>
+          <p>The hub helps you discover work. The contribution itself remains visible and auditable in the repository.</p>
+        </div>
+        <div class="journey-grid">
+          <article><span>01</span><h3>Choose</h3><p>Use the live finder to identify a scoped issue that matches your experience and interest.</p></article>
+          <article><span>02</span><h3>Claim</h3><p>Open the issue on GitHub and comment <code>/claim</code>. RepoOps handles the assignment lifecycle.</p></article>
+          <article><span>03</span><h3>Build</h3><p>Follow the acceptance criteria, keep scope focused, and run <code>npm run check</code>.</p></article>
+          <article><span>04</span><h3>PR</h3><p>Open a focused pull request linked to the issue and include the validation evidence maintainers need.</p></article>
+          <article><span>05</span><h3>Review</h3><p>Respond to CI and maintainer feedback. RepoOps will increasingly surface who needs to act next.</p></article>
+          <article><span>06</span><h3>Merge</h3><p>Completed work stays connected to its issue and becomes part of RepoOps’ operational history.</p></article>
+        </div>
+      </section>
+
+      <section class="section propose-section" id="propose">
+        <div class="section-heading">
+          <p class="eyebrow">DON’T SEE THE RIGHT ISSUE?</p>
+          <h2>Bring a real problem or a meaningful upgrade.</h2>
+          <p>Proposals enter GitHub triage first. Submitting an idea does not make it approved, ready, or automatically claimable.</p>
+        </div>
+        <div class="proposal-grid">
+          <article class="proposal-card">
+            <span aria-hidden="true">!</span>
+            <h3>Propose a problem</h3>
+            <p>Describe maintainer pain, workflow friction, missing automation, reliability risk, or another concrete repository-operations problem before prescribing the solution.</p>
+            <a class="button button--primary" id="problemLink" target="_blank" rel="noreferrer">Open problem form</a>
+          </article>
+          <article class="proposal-card">
+            <span aria-hidden="true">+</span>
+            <h3>Propose an upgrade</h3>
+            <p>Suggest a new capability or improvement grounded in a real maintainer or contributor workflow.</p>
+            <a class="button button--secondary" id="upgradeLink" target="_blank" rel="noreferrer">Open upgrade form</a>
+          </article>
+        </div>
+      </section>
+
+      <section class="section help-strip">
+        <div><strong>Need contribution guidance?</strong><span>Read the contribution and development docs before starting substantial work.</span></div>
+        <div class="hero-actions">
+          <a class="button button--secondary" id="contributingLink" target="_blank" rel="noreferrer">Contributing</a>
+          <a class="button button--secondary" id="developmentLink" target="_blank" rel="noreferrer">Development guide</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div><strong>RepoOps</strong><span>Open-source repository operations for GitHub maintainers.</span></div>
+      <nav aria-label="Footer navigation">
+        <a href="./">Website</a>
+        <a id="roadmapLink" target="_blank" rel="noreferrer">Roadmap</a>
+        <a id="securityLink" target="_blank" rel="noreferrer">Security</a>
+      </nav>
+      <small>GitHub remains authoritative.</small>
+    </footer>
+
+    <script type="module" src="./contribute.mjs"></script>
+  </body>
+</html>
