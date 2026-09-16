@@ -1,0 +1,13 @@
+{
+  "action": "created",
+  "issue": {
+    "number": 42,
+    "assignees": [],
+    "labels": []
+  },
+  "comment": {
+    "body": "/claim",
+    "user": { "login": "alice" }
+  },
+  "sender": { "login": "alice" }
+}
