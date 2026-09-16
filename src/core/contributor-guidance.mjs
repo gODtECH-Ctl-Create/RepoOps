@@ -40,3 +40,33 @@ export function buildClaimConfirmation({ actor, issueNumber, baseMessage, guidan
 
   return sections.join("\n");
 }
+
+export function commentGuidanceMarker(actorId) {
+  if (!Number.isSafeInteger(actorId) || actorId < 1) throw new Error("Comment guidance requires a valid actor id");
+  return `<!-- repoops:comment-guidance:v1:${actorId} -->`;
+}
+
+export function buildCommentGuidance({ guidance }) {
+  if (!guidance?.enabled) return null;
+
+  const proposalLinks = [
+    link("Propose a problem", guidance.problemUrl),
+    link("Propose an upgrade", guidance.upgradeUrl)
+  ].filter(Boolean);
+
+  const lines = [
+    "👋 Thanks for joining the discussion.",
+    "",
+    "Want to work on this issue? Comment:",
+    "",
+    "`/claim`",
+    "",
+    "RepoOps only treats the explicit `/claim` command as an ownership request. An ordinary comment does not reserve the issue."
+  ];
+
+  if (proposalLinks.length) {
+    lines.push("", "Have something broader in mind?", ...proposalLinks);
+  }
+
+  return lines.join("\n");
+}
