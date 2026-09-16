@@ -1,0 +1,67 @@
+name: Bug report
+description: Report incorrect or unsafe RepoOps behavior
+title: "[Bug]: "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a RepoOps bug. Do not include secrets or sensitive vulnerability details here; use the security policy for those.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Describe the incorrect behavior clearly.
+      placeholder: RepoOps assigned the wrong user after...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What should have happened?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Include the event, command, issue/PR state, and sequence of actions.
+      placeholder: |
+        1. Create an unassigned issue
+        2. Comment /claim
+        3. ...
+    validations:
+      required: true
+  - type: input
+    id: repository
+    attributes:
+      label: Repository context
+      description: Repository name or public URL if relevant.
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Logs or evidence
+      description: Paste non-sensitive workflow output, screenshots, or links.
+      render: text
+  - type: dropdown
+    id: impact
+    attributes:
+      label: Impact
+      options:
+        - Automation did not run
+        - Wrong repository state mutation
+        - Duplicate/repeated action
+        - Incorrect comment or status
+        - Configuration problem
+        - Other
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues for duplicates.
+          required: true
+        - label: This report does not contain secrets or private vulnerability details.
+          required: true

@@ -1,0 +1,7 @@
+# Default ownership
+* @gODtECH-Ctl-Create
+
+# Security-sensitive automation
+/.github/workflows/ @gODtECH-Ctl-Create
+/src/github/ @gODtECH-Ctl-Create
+/SECURITY.md @gODtECH-Ctl-Create
