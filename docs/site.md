@@ -59,7 +59,7 @@ GitHub-sourced issue titles, usernames, and labels are inserted into the DOM wit
 
 ## GitHub Pages deployment
 
-`.github/workflows/pages.yml` publishes `site/` after relevant changes reach `main`, and it can also be dispatched manually.
+`.github/workflows/pages.yml` publishes `site/` after relevant changes reach `MASTER`, and it can also be dispatched manually.
 
 The workflow uses GitHub's Pages artifact/deployment actions and grants deployment permissions only to the deploy job.
 
