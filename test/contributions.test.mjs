@@ -51,11 +51,12 @@ function linkedIssue({ issueId = 200, issueNumber = 20, prNumber = 30, mergedAt 
 }
 
 function completedFixture({ contributorId = 42, issueId = 200, issueNumber = 20, prId = 300, prNumber = 30, mergedAt = "2026-09-16T10:00:00Z", eventOffset = 0 } = {}) {
+  const assignedAt = new Date(Date.parse(mergedAt) - 60 * 60 * 1000).toISOString();
   return {
     events: [
       githubEvent({
         type: "github.issue.assigned",
-        timestamp: "2026-09-16T09:00:00Z",
+        timestamp: assignedAt,
         resource: issueResource(issueId, issueNumber),
         eventId: 1000 + eventOffset,
         assigneeId: contributorId
