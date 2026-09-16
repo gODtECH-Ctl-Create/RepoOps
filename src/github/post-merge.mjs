@@ -1,6 +1,12 @@
 import { decideActiveWorkLimit } from "../core/active-work.mjs";
 import { priorContributionStatus } from "../core/contributions.mjs";
-import { buildPostMergeMessage, postMergeMarker, selectNextWork } from "../core/post-merge.mjs";
+import {
+  buildPostMergeMessage,
+  buildPullRequestPostMergeMessage,
+  postMergeMarker,
+  postMergePullRequestMarker,
+  selectNextWork
+} from "../core/post-merge.mjs";
 import { listManagedActiveAssignments } from "./active-work.mjs";
 import { collectContributionProjection } from "./contribution-history.mjs";
 import { findLinkedPullRequests } from "./linked-pull-requests.mjs";
@@ -47,6 +53,10 @@ async function fallbackPullRequestAuthor(client, pullRequestNumber) {
   return { login: pr.user.login, id: pr.user.id };
 }
 
+function hasOwnMarker(client, comments, marker) {
+  return comments.some((comment) => client.isOwnComment(comment) && typeof comment.body === "string" && comment.body.includes(marker));
+}
+
 export async function postMergeFollowUpForIssue({ client, config, issueNumber, pullRequestNumber }) {
   if (!Number.isSafeInteger(issueNumber) || issueNumber < 1 || (pullRequestNumber !== undefined && (!Number.isSafeInteger(pullRequestNumber) || pullRequestNumber < 1))) throw new Error("Invalid post-merge target");
   const issue = await client.getIssue(issueNumber);
@@ -56,9 +66,16 @@ export async function postMergeFollowUpForIssue({ client, config, issueNumber, p
   const merged = chooseMergedPullRequest(linked, pullRequestNumber, client.repository);
   if (!merged) return { type: "skip", reason: "no-authoritative-merged-pr" };
 
-  const marker = postMergeMarker(issue.id, merged.number);
-  const comments = await client.listComments(issueNumber);
-  if (comments.some((comment) => client.isOwnComment(comment) && comment.body.includes(marker))) {
+  const issueMarker = postMergeMarker(issue.id, merged.number);
+  const pullRequestMarker = postMergePullRequestMarker(issue.id, merged.number);
+  const [issueComments, pullRequestComments] = await Promise.all([
+    client.listComments(issueNumber),
+    client.listComments(merged.number)
+  ]);
+  const issueFollowUpExists = hasOwnMarker(client, issueComments, issueMarker);
+  const pullRequestFollowUpExists = hasOwnMarker(client, pullRequestComments, pullRequestMarker);
+
+  if (issueFollowUpExists && pullRequestFollowUpExists) {
     return { type: "skip", reason: "already-followed-up", issueNumber, pullRequestNumber: merged.number };
   }
 
@@ -77,16 +94,42 @@ export async function postMergeFollowUpForIssue({ client, config, issueNumber, p
     contributor = (await fallbackPullRequestAuthor(client, merged.number)).login;
   }
 
-  const suggestions = await suggestionsForContributor(client, config, contributor, issue.number);
-  const message = buildPostMergeMessage({
-    contributor,
+  let suggestions = [];
+  let issueCommentAdded = false;
+  let pullRequestCommentAdded = false;
+
+  if (!issueFollowUpExists) {
+    suggestions = await suggestionsForContributor(client, config, contributor, issue.number);
+    const message = buildPostMergeMessage({
+      contributor,
+      issueNumber: issue.number,
+      pullRequestNumber: merged.number,
+      contributionStatus,
+      suggestions,
+      guidance: config.contributorGuidance
+    });
+    await client.addComment(issue.number, `${message}\n\n${issueMarker}`);
+    issueCommentAdded = true;
+  }
+
+  if (!pullRequestFollowUpExists) {
+    const pullRequestMessage = buildPullRequestPostMergeMessage({
+      contributor,
+      issueNumber: issue.number,
+      contributionStatus
+    });
+    await client.addComment(merged.number, `${pullRequestMessage}\n\n${pullRequestMarker}`);
+    pullRequestCommentAdded = true;
+  }
+
+  return {
+    type: "followed-up",
     issueNumber: issue.number,
     pullRequestNumber: merged.number,
+    contributor,
     contributionStatus,
     suggestions,
-    guidance: config.contributorGuidance
-  });
-  await client.addComment(issue.number, `${message}\n\n${marker}`);
-
-  return { type: "followed-up", issueNumber: issue.number, pullRequestNumber: merged.number, contributor, contributionStatus, suggestions };
+    issueCommentAdded,
+    pullRequestCommentAdded
+  };
 }
