@@ -17,6 +17,15 @@ assignments:
   reminderAfterDays: 3
   expireAfterDays: 7
   autoRelease: false
+
+contributorGuidance:
+  enabled: true
+  requirements: "Node.js 20+ and Git"
+  setupCommand: "npm install"
+  checkCommand: "npm run check"
+  contributingUrl: "https://github.com/example/project/blob/main/CONTRIBUTING.md"
+  developmentUrl: "https://github.com/example/project/blob/main/docs/development.md"
+  architectureUrl: "https://github.com/example/project/blob/main/docs/architecture.md"
 ```
 
 ## `commands`
@@ -38,6 +47,53 @@ Non-empty string. Label applied when an issue is successfully claimed and remove
 
 Default: `status: in-progress`.
 
+### `ready`
+Non-empty string. Label used for open work that is available to claim.
+
+Default: `status: ready`.
+
+## Assignment lifecycle policy
+
+`reminderAfterDays` defaults to 3 and `expireAfterDays` defaults to 7. Each must
+be an unquoted integer from 1 through 36500; expiry must be strictly later than
+the reminder threshold. Zero, negative, fractional, quoted numeric, duplicate,
+and unknown settings are rejected. Limits keep UTC day arithmetic bounded.
+
+`autoRelease` is a boolean and defaults to false. These settings configure policy;
+this version does not implement automatic expiry or release, even when true is
+explicitly configured. The scheduled scanner remains reminder-only. See [stale reminders](stale-assignments.md) for window and linked-PR rules.
+
+`labels.ready` defaults to `status: ready`. It and `labels.inProgress` must be
+non-empty trimmed strings with distinct names (case-insensitive). Existing
+configurations receive these defaults without requiring migration.
+
+## Contributor guidance
+
+`contributorGuidance` controls the actionable onboarding appended to a **new successful** `/claim` confirmation.
+
+RepoOps intentionally keeps project-specific commands out of the global defaults. If a repository does not configure commands or documentation URLs, contributors still receive generic guidance to create a focused branch and open a linked pull request, but RepoOps does not guess the project's setup or test commands.
+
+Supported keys:
+
+- `enabled` — boolean; defaults to `true`. Set to `false` to preserve the short claim confirmation without onboarding text.
+- `requirements` — optional display-only requirements text, for example `Node.js 20+ and Git`.
+- `setupCommand` — optional display-only setup command, for example `npm install`.
+- `checkCommand` — optional display-only validation command, for example `npm run check`.
+- `contributingUrl` — optional absolute HTTPS URL to the contributor guide.
+- `developmentUrl` — optional absolute HTTPS URL to development/setup documentation.
+- `architectureUrl` — optional absolute HTTPS URL to architecture documentation.
+
+Safety rules:
+
+- setup/check values are **display-only**; RepoOps never executes them.
+- project-specific commands must be explicitly repository-configured.
+- guidance URLs must be absolute `https://` URLs.
+- command/display fields reject backticks so repository policy cannot break the generated inline-code formatting.
+- repeated delivery of the same claim event reuses the existing idempotent receipt instead of posting duplicate onboarding.
+- already-owned, blocked, closed, unavailable, or otherwise denied claims do not receive a misleading success/onboarding message.
+
+RepoOps itself configures Node.js 20+, `npm install`, `npm run check`, and links to its CONTRIBUTING, development, and architecture guides.
+
 ## Validation behavior
 
 RepoOps deliberately rejects unknown sections and unknown keys. This prevents misspelled policy from being silently ignored.
@@ -46,8 +102,10 @@ The current parser also requires:
 
 - two-space indentation for values
 - no tabs
-- boolean values for command switches
-- a non-empty string for `labels.inProgress`
+- boolean values for command switches and `contributorGuidance.enabled`
+- non-empty trimmed workflow label strings
+- bounded integer assignment windows
+- validated contributor-guidance strings and HTTPS documentation URLs
 
 When `.repoops.yml` is absent, RepoOps uses safe defaults.
 
@@ -67,18 +125,3 @@ Simulation is not a substitute for unit tests. Changes to command or lifecycle b
 ## Configuration compatibility
 
 `.repoops.yml` is a public interface. New options should default safely. Renaming or removing existing keys requires migration guidance and should follow the release policy in `docs/releases.md`.
-
-## Assignment lifecycle policy
-
-`reminderAfterDays` defaults to 3 and `expireAfterDays` defaults to 7. Each must
-be an unquoted integer from 1 through 36500; expiry must be strictly later than
-the reminder threshold. Zero, negative, fractional, quoted numeric, duplicate,
-and unknown settings are rejected. Limits keep UTC day arithmetic bounded.
-
-`autoRelease` is a boolean and defaults to false. These settings configure policy;
-this version does not implement automatic expiry or release, even when true is
-explicitly configured. The scheduled scanner remains reminder-only. See [stale reminders](stale-assignments.md) for window and linked-PR rules.
-
-`labels.ready` defaults to `status: ready`. It and `labels.inProgress` must be
-non-empty trimmed strings with distinct names (case-insensitive). Existing
-configurations receive these new defaults without requiring migration.
