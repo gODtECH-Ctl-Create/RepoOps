@@ -11,7 +11,9 @@ export const DEFAULT_CONFIG = Object.freeze({
     checkCommand: "",
     contributingUrl: "",
     developmentUrl: "",
-    architectureUrl: ""
+    architectureUrl: "",
+    problemUrl: "",
+    upgradeUrl: ""
   })
 });
 
@@ -27,7 +29,9 @@ const allowedKeys = {
     "checkCommand",
     "contributingUrl",
     "developmentUrl",
-    "architectureUrl"
+    "architectureUrl",
+    "problemUrl",
+    "upgradeUrl"
   ])
 };
 
@@ -129,7 +133,7 @@ export function parseRepoOpsConfig(text = "") {
   for (const key of ["requirements", "setupCommand", "checkCommand"]) {
     validateGuidanceString(key, result.contributorGuidance[key]);
   }
-  for (const key of ["contributingUrl", "developmentUrl", "architectureUrl"]) {
+  for (const key of ["contributingUrl", "developmentUrl", "architectureUrl", "problemUrl", "upgradeUrl"]) {
     validateGuidanceUrl(key, result.contributorGuidance[key]);
   }
 

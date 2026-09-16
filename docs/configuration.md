@@ -26,6 +26,8 @@ contributorGuidance:
   contributingUrl: "https://github.com/example/project/blob/main/CONTRIBUTING.md"
   developmentUrl: "https://github.com/example/project/blob/main/docs/development.md"
   architectureUrl: "https://github.com/example/project/blob/main/docs/architecture.md"
+  problemUrl: "https://github.com/example/project/issues/new?template=problem.yml"
+  upgradeUrl: "https://github.com/example/project/issues/new?template=feature.yml"
 ```
 
 ## `commands`
@@ -65,34 +67,53 @@ explicitly configured. The scheduled scanner remains reminder-only. See [stale r
 
 `labels.ready` defaults to `status: ready`. It and `labels.inProgress` must be
 non-empty trimmed strings with distinct names (case-insensitive). Existing
-configurations receive these defaults without requiring migration.
+configurations receive these new defaults without requiring migration.
 
 ## Contributor guidance
 
-`contributorGuidance` controls the actionable onboarding appended to a **new successful** `/claim` confirmation.
+`contributorGuidance` controls contributor-facing guidance around claiming work.
 
-RepoOps intentionally keeps project-specific commands out of the global defaults. If a repository does not configure commands or documentation URLs, contributors still receive generic guidance to create a focused branch and open a linked pull request, but RepoOps does not guess the project's setup or test commands.
+A **new successful** `/claim` can include repository-owned setup/check instructions and documentation links. A first ordinary human comment on an explicitly ready, unassigned, unblocked issue can also receive a one-time reminder that ownership requires the exact `/claim` command, plus optional problem/upgrade proposal routes.
+
+RepoOps intentionally keeps project-specific commands out of the global defaults. If a repository does not configure commands or documentation URLs, contributors still receive generic guidance, but RepoOps does not guess the project's setup or test commands.
 
 Supported keys:
 
-- `enabled` — boolean; defaults to `true`. Set to `false` to preserve the short claim confirmation without onboarding text.
+- `enabled` — boolean; defaults to `true`. Set to `false` to disable contributor guidance.
 - `requirements` — optional display-only requirements text, for example `Node.js 20+ and Git`.
 - `setupCommand` — optional display-only setup command, for example `npm install`.
 - `checkCommand` — optional display-only validation command, for example `npm run check`.
 - `contributingUrl` — optional absolute HTTPS URL to the contributor guide.
 - `developmentUrl` — optional absolute HTTPS URL to development/setup documentation.
 - `architectureUrl` — optional absolute HTTPS URL to architecture documentation.
+- `problemUrl` — optional absolute HTTPS URL for proposing a broader problem.
+- `upgradeUrl` — optional absolute HTTPS URL for proposing a feature or upgrade.
+
+### Ordinary-comment guidance
+
+RepoOps does not infer assignment intent from natural language. On an open issue it will only advertise `/claim` when the issue is explicitly carrying the configured ready label, has no assignee, and has no blocking state.
+
+The guidance is suppressed when:
+
+- the same actor has already received the one-time nudge on that issue
+- the issue is assigned, blocked, closed, or not explicitly ready
+- the comment belongs to a pull request
+- the author is a bot
+- the comment is already a recognized slash command
+
+This keeps normal issue discussion usable without turning RepoOps into a reply bot.
 
 Safety rules:
 
 - setup/check values are **display-only**; RepoOps never executes them.
 - project-specific commands must be explicitly repository-configured.
 - guidance URLs must be absolute `https://` URLs.
-- command/display fields reject backticks so repository policy cannot break the generated inline-code formatting.
+- command/display fields reject backticks so repository policy cannot break generated inline-code formatting.
 - repeated delivery of the same claim event reuses the existing idempotent receipt instead of posting duplicate onboarding.
+- ordinary-comment guidance uses a bot-authored actor marker and the repository mutation queue to suppress duplicate nudges.
 - already-owned, blocked, closed, unavailable, or otherwise denied claims do not receive a misleading success/onboarding message.
 
-RepoOps itself configures Node.js 20+, `npm install`, `npm run check`, and links to its CONTRIBUTING, development, and architecture guides.
+RepoOps itself configures Node.js 20+, `npm install`, `npm run check`, its contributor/development/architecture guides, and its structured problem/upgrade issue forms.
 
 ## Validation behavior
 
@@ -105,7 +126,7 @@ The current parser also requires:
 - boolean values for command switches and `contributorGuidance.enabled`
 - non-empty trimmed workflow label strings
 - bounded integer assignment windows
-- validated contributor-guidance strings and HTTPS documentation URLs
+- validated contributor-guidance strings and HTTPS documentation/proposal URLs
 
 When `.repoops.yml` is absent, RepoOps uses safe defaults.
 

@@ -18,3 +18,5 @@ contributorGuidance:
   contributingUrl: "https://github.com/gODtECH-Ctl-Create/RepoOps/blob/main/CONTRIBUTING.md"
   developmentUrl: "https://github.com/gODtECH-Ctl-Create/RepoOps/blob/main/docs/development.md"
   architectureUrl: "https://github.com/gODtECH-Ctl-Create/RepoOps/blob/main/docs/architecture.md"
+  problemUrl: "https://github.com/gODtECH-Ctl-Create/RepoOps/issues/new?template=problem.yml"
+  upgradeUrl: "https://github.com/gODtECH-Ctl-Create/RepoOps/issues/new?template=feature.yml"

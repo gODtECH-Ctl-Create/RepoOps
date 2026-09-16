@@ -10,7 +10,7 @@ Claims an available GitHub issue for the commenter.
 
 Expected behavior:
 - ignore pull request comments
-- ignore unrelated comments
+- ignore unrelated comments as commands
 - refuse to replace an existing assignee
 - assign the commenter when the issue is available
 - ensure the configured in-progress label exists
@@ -45,6 +45,17 @@ Example:
 ```
 
 Both commands can be disabled through `.repoops.yml`.
+
+## Ordinary issue comments
+
+An ordinary comment is never treated as an ownership request. When a human first comments on an open issue that is explicitly `status: ready`, unassigned, and unblocked, RepoOps may post one concise guidance reply for that person explaining:
+
+- use the exact `/claim` command to take ownership
+- an ordinary comment does not reserve the issue
+- use the configured `Propose a problem` route for a broader repository-operations problem
+- use the configured `Propose an upgrade` route for a feature or improvement
+
+The nudge is suppressed after that actor has received it once on the issue. It is also suppressed for bots, pull requests, closed issues, blocked/non-ready work, or already-assigned work. RepoOps never uses fuzzy natural-language intent to assign an issue.
 
 ## Planned
 

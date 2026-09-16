@@ -8,6 +8,8 @@ The format follows a Keep a Changelog-style categories and the project intends t
 
 ### Added
 
+- One-time contributor guidance on ordinary comments for explicitly ready issues, directing contributors to `/claim` and configured problem/upgrade proposal routes without inferring ownership from natural language.
+
 - Configurable contributor onboarding on successful `/claim`, including repository-owned requirements, setup/check commands, and contributor/development/architecture links without executing configured text.
 
 - Version-1 operational event contract with immutable records, typed metadata, source-based identities, and explicit replay conflicts.
