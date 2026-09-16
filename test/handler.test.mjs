@@ -66,3 +66,38 @@ test("unclaim does not restore readiness with another assignee or blocked work",
   await handleIssueComment(event(2), blocked, DEFAULT_CONFIG);
   assert.deepEqual(blocked.issue.assignees, []);
 });
+
+test("successful claim includes configured onboarding once and denied claims do not", async () => {
+  const config = structuredClone(DEFAULT_CONFIG);
+  config.contributorGuidance = {
+    enabled: true,
+    requirements: "Node.js 20+ and Git",
+    setupCommand: "npm install",
+    checkCommand: "npm run check",
+    contributingUrl: "https://example.com/CONTRIBUTING.md",
+    developmentUrl: "https://example.com/development",
+    architectureUrl: "https://example.com/architecture"
+  };
+
+  const client = fakeClient();
+  client.issue.labels = [{ name: "status: ready" }];
+  await handleIssueComment(event(1), client, config);
+  assert.equal(client.comments.length, 1);
+  assert.match(client.comments[0].body, /Welcome, @alice/);
+  assert.match(client.comments[0].body, /npm install/);
+  assert.match(client.comments[0].body, /npm run check/);
+  assert.match(client.comments[0].body, /Contributor guide/);
+
+  await handleIssueComment(event(1), client, config);
+  assert.equal(client.comments.length, 1);
+
+  await handleIssueComment(event(2), client, config);
+  assert.equal(client.comments.length, 2);
+  assert.doesNotMatch(client.comments[1].body, /Welcome, @alice/);
+
+  const blocked = fakeClient();
+  blocked.issue.labels = [{ name: "status: blocked" }];
+  await handleIssueComment(event(3), blocked, config);
+  assert.equal(blocked.comments.length, 1);
+  assert.doesNotMatch(blocked.comments[0].body, /Welcome, @alice/);
+});

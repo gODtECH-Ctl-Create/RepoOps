@@ -16,12 +16,17 @@ Expected behavior:
 - ensure the configured in-progress label exists
 - remove ready before adding in-progress; repeated claims reconcile missing state
 - post a confirmation comment
+- on a genuinely new successful claim, append repository-configured contributor guidance such as setup/check commands and documentation links
+- never execute configured guidance text; it is display-only
+- do not repeat onboarding for an already-owned, denied, blocked, closed, or replayed claim
 
 Example:
 
 ```text
 /claim
 ```
+
+A repository can configure contributor onboarding through `contributorGuidance` in `.repoops.yml`. RepoOps itself points contributors to Node.js 20+, `npm install`, `npm run check`, CONTRIBUTING, development, and architecture guidance. Other repositories must explicitly configure their own project-specific commands; RepoOps does not guess them.
 
 ### `/unclaim`
 

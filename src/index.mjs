@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { decideClaim } from "./core/claim.mjs";
 import { routeCommand } from "./core/commands.mjs";
 import { loadRepoOpsConfig } from "./core/config.mjs";
+import { buildClaimConfirmation } from "./core/contributor-guidance.mjs";
 import { isAvailable, workflowTransition } from "./core/workflow-state.mjs";
 import { decideUnclaim } from "./core/unclaim.mjs";
 import { executeOperation, operationKey } from "./core/idempotency.mjs";
@@ -45,7 +46,6 @@ export async function handleIssueComment(event, client, config) {
       if (decision.type === "claim" || decision.type === "already-owned") {
         if (decision.type === "claim") mutations.push({ type: "assign", login: actor });
         expectedAssignees = [...new Set([...expectedAssignees, actor])];
-
       }
       if (decision.type === "unclaim") {
         mutations.push({ type: "unassign", login: actor });
@@ -54,8 +54,16 @@ export async function handleIssueComment(event, client, config) {
       if (["claim", "already-owned", "unclaim", "not-owned"].includes(decision.type)) {
         mutations.push(...workflowTransition({ state: issue.state, assignees: expectedAssignees, labels: issue.labels, action: routed.command.name.slice(1), policy: config.labels }));
       }
-      const message = decision.type === "unclaim" && (expectedAssignees.length || !isAvailable(issue.labels))
+      let message = decision.type === "unclaim" && (expectedAssignees.length || !isAvailable(issue.labels))
         ? `✅ @${actor} released their assignment. This issue is not available for a new claim.` : decision.message;
+      if (decision.type === "claim") {
+        message = buildClaimConfirmation({
+          actor,
+          issueNumber,
+          baseMessage: message,
+          guidance: config.contributorGuidance
+        });
+      }
       return { state: issue.state, message, expectedAssignees, mutations };
     },
     steps: (plan) => issueMutationSteps(client, issueNumber, plan)
