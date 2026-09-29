@@ -1,7 +1,7 @@
 import { createPrivateKey } from "node:crypto";
 
 const DEFAULT_API_BASE_URL = "https://api.github.com";
-const CLIENT_ID_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
+const CLIENT_ID_PATTERN = /^[A-Za-z0-9._-]{1,128}$/;
 
 export class GitHubAppConfigError extends Error {
   constructor(field) {
