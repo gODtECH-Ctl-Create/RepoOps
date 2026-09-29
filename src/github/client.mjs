@@ -1,34 +1,98 @@
 const apiBase = "https://api.github.com";
 
+function integerHeader(headers, name) {
+  const value = headers?.get?.(name);
+  if (typeof value !== "string" || !/^\d+$/.test(value)) return null;
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) ? parsed : null;
+}
+
+function safeResponseMessage(text) {
+  if (typeof text !== "string" || !text.length) return "";
+
+  let message = text;
+  try {
+    const parsed = JSON.parse(text);
+    if (typeof parsed?.message === "string") message = parsed.message;
+  } catch {
+    // Fall back to bounded plain text when GitHub did not return JSON.
+  }
+
+  return message.replace(/[\u0000-\u001f\u007f]+/g, " ").trim().slice(0, 500);
+}
+
+export class GitHubApiError extends Error {
+  constructor({ status, responseMessage = "", requestId = null, retryAfterSeconds = null, rateLimitRemaining = null, rateLimitReset = null }) {
+    super(`GitHub API failed ${status}${responseMessage ? `: ${responseMessage}` : ""}`);
+    this.name = "GitHubApiError";
+    this.status = status;
+    this.responseMessage = responseMessage;
+    this.requestId = requestId;
+    this.retryAfterSeconds = retryAfterSeconds;
+    this.rateLimitRemaining = rateLimitRemaining;
+    this.rateLimitReset = rateLimitReset;
+  }
+}
+
+export class GitHubNetworkError extends Error {
+  constructor(cause) {
+    super("GitHub network request failed", { cause });
+    this.name = "GitHubNetworkError";
+    this.code = typeof cause?.code === "string" ? cause.code : null;
+  }
+}
+
 export class GitHubClient {
-  constructor({ token, repository, botId = 41898282 }) {
+  constructor({ token, repository, botId = 41898282, fetchImpl = globalThis.fetch }) {
     if (!token) throw new Error("GITHUB_TOKEN is required");
     if (!repository?.includes("/")) throw new Error("GITHUB_REPOSITORY must be owner/repo");
+    if (typeof fetchImpl !== "function") throw new Error("A fetch implementation is required");
 
     this.botId = botId;
     this.token = token;
     this.repository = repository;
+    this.fetchImpl = fetchImpl;
+  }
+
+  requestHeaders(extra = {}) {
+    return {
+      Accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+      Authorization: `Bearer ${this.token}`,
+      "Content-Type": "application/json",
+      ...extra
+    };
+  }
+
+  async fetchResponse(url, options = {}) {
+    try {
+      return await this.fetchImpl(url, options);
+    } catch (error) {
+      if (error instanceof GitHubNetworkError) throw error;
+      throw new GitHubNetworkError(error);
+    }
+  }
+
+  async apiError(response) {
+    const text = await response.text();
+    const requestId = response.headers?.get?.("x-github-request-id") ?? null;
+    return new GitHubApiError({
+      status: response.status,
+      responseMessage: safeResponseMessage(text),
+      requestId: typeof requestId === "string" ? requestId.slice(0, 200) : null,
+      retryAfterSeconds: integerHeader(response.headers, "retry-after"),
+      rateLimitRemaining: integerHeader(response.headers, "x-ratelimit-remaining"),
+      rateLimitReset: integerHeader(response.headers, "x-ratelimit-reset")
+    });
   }
 
   async request(path, options = {}) {
-    const response = await fetch(`${apiBase}${path}`, {
+    const response = await this.fetchResponse(`${apiBase}${path}`, {
       ...options,
-      headers: {
-        Accept: "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28",
-        Authorization: `Bearer ${this.token}`,
-        "Content-Type": "application/json",
-        ...(options.headers ?? {})
-      }
+      headers: this.requestHeaders(options.headers ?? {})
     });
 
-    if (!response.ok) {
-      const text = await response.text();
-      const error = new Error(`GitHub API failed ${response.status}: ${text}`);
-      error.status = response.status;
-      throw error;
-    }
-
+    if (!response.ok) throw await this.apiError(response);
     if (response.status === 204) return null;
     return response.json();
   }
@@ -99,20 +163,12 @@ export class GitHubClient {
 
   async ensureLabel(name, color = "1d76db", description = "Managed by RepoOps") {
     const encoded = encodeURIComponent(name);
-
-    const lookup = await fetch(`${apiBase}/repos/${this.repository}/labels/${encoded}`, {
-      headers: {
-        Accept: "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28",
-        Authorization: `Bearer ${this.token}`
-      }
+    const lookup = await this.fetchResponse(`${apiBase}/repos/${this.repository}/labels/${encoded}`, {
+      headers: this.requestHeaders()
     });
 
     if (lookup.ok) return;
-    if (lookup.status !== 404) {
-      const text = await lookup.text();
-      throw new Error(`GitHub API failed ${lookup.status}: ${text}`);
-    }
+    if (lookup.status !== 404) throw await this.apiError(lookup);
 
     await this.request(`/repos/${this.repository}/labels`, {
       method: "POST",
