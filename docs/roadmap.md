@@ -125,19 +125,29 @@ The current contribution history is an in-process projection, not a persistent a
 
 ## Stage 5 — Reusable distribution
 
-Goal: make RepoOps useful outside its own repository through a lightweight repository-local distribution path.
+Status: in progress
 
-Planned capabilities:
+Goal: make the current RepoOps IssueOps runtime useful outside its own repository through a lightweight repository-local distribution path.
 
-- reusable GitHub Action
-- documented installation workflow
-- versioned configuration schema
-- compatibility guarantees
-- migration tooling
-- example repositories
-- policy presets
+Implemented:
 
-Reusable Actions remain valuable for self-managed or repository-local adoption, but they are now a parallel distribution track rather than a hard prerequisite for the hosted GitHub App. The hosted control-plane path can progress independently while preserving the same deterministic core and configuration contracts.
+- reusable composite GitHub Action
+- consumer workflow with least-privilege permission guidance
+- repository-local `.repoops.yml` policy compatibility
+- stable major-channel versioning model
+- release workflow that creates a GitHub Release and moves the matching major channel for stable releases
+- action metadata validation in the repository check suite
+- security guidance for `pull_request_target` and contributor-controlled code
+
+Remaining capabilities:
+
+- first published `v0.x` release
+- compatibility guarantees and documented version support window
+- migration tooling for older repository-local copies
+- example consumer repositories
+- policy presets for common team workflows
+
+The reusable Action is a distribution layer around the existing deterministic IssueOps runtime. It does not require the hosted GitHub App and does not replace GitHub issues, pull requests, reviews, branch protection, or CI.
 
 ## Stage 6 — GitHub App control plane
 
