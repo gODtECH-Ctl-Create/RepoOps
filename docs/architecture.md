@@ -113,11 +113,15 @@ by lifecycle policies and future PR queues. See [relationship rules](linked-pull
 
 ## Webhook and API reliability foundations
 
+`src/github/webhook-signature.mjs` verifies GitHub HMAC-SHA256 signatures against the exact raw webhook payload before parsing. `src/github/webhook-ingress.mjs` then normalizes authenticated repository-operation envelopes without treating contributor-controlled payload content as authorization data.
+
 `src/core/webhook-delivery.mjs` defines replay-safe GitHub webhook delivery registration through an injected durable store. The GitHub delivery GUID supplies delivery identity; payload text does not.
+
+`src/core/webhook-inbox.mjs` defines the versioned processing record, retry/reconciliation states, worker leases, recovery classification, and persistence adapter contract for accepted webhook work. See [webhook inbox processing](webhook-inbox.md) for state transitions, PostgreSQL indexing requirements, payload retention, and compare-and-swap semantics.
 
 `src/github/client.mjs` exposes bounded structured GitHub API failure metadata, while `src/github/retry.mjs` classifies retryable reads, rate limits, permanent failures, and ambiguous mutation outcomes. Mutation failures that may already have reached GitHub require reconciliation before another write.
 
-These primitives are intentionally runtime-agnostic. The future hosted App still needs a persistent inbox, queue/workers, retry scheduler, failed-delivery recovery, installation-token lifecycle, reconciliation workers, and operator/dead-letter tooling. See [GitHub App reliability architecture](github-app-reliability.md) for the complete reliability contract.
+These primitives are intentionally runtime-agnostic. The future hosted App still needs a persistent inbox adapter/database, queue/workers, retry scheduler, failed-delivery recovery, installation-token lifecycle, reconciliation workers, and operator/dead-letter tooling. See [GitHub App reliability architecture](github-app-reliability.md) for the complete reliability contract.
 
 ## Scheduled reminders
 
