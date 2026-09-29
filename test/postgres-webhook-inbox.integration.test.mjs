@@ -10,7 +10,10 @@ import {
 } from "../src/core/webhook-inbox.mjs";
 import { createWebhookDelivery } from "../src/core/webhook-delivery.mjs";
 import { createPostgresPool } from "../src/control-plane/postgres/database.mjs";
-import { runPostgresMigrations } from "../src/control-plane/postgres/migrations.mjs";
+import {
+  PostgresMigrationValidationError,
+  runPostgresMigrations
+} from "../src/control-plane/postgres/migrations.mjs";
 import {
   PostgresWebhookInboxConflictError,
   PostgresWebhookPayloadIntegrityError,
@@ -63,7 +66,7 @@ async function persistTransition(current, next) {
 
 before(async () => {
   if (skip) return;
-  pool = createPostgresPool({ env: { REPOOPS_DATABASE_URL: databaseUrl }, max: 4 });
+  pool = createPostgresPool({ env: { REPOOPS_DATABASE_URL: databaseUrl }, max: 6 });
   await runPostgresMigrations({ pool });
   store = createPostgresWebhookInboxStore({ pool });
 });
@@ -104,6 +107,30 @@ test("PostgreSQL migrations are repeatable and record immutable migration histor
   ]) assert.equal(names.has(name), true);
 });
 
+test("migration checksum drift is rejected rather than silently accepting edited history", { skip }, async () => {
+  const current = await pool.query(
+    "SELECT checksum FROM repoops_schema_migrations WHERE version = 1"
+  );
+  const original = current.rows[0].checksum.trim();
+
+  await pool.query(
+    "UPDATE repoops_schema_migrations SET checksum = $1 WHERE version = 1",
+    ["0".repeat(64)]
+  );
+
+  try {
+    await assert.rejects(
+      () => runPostgresMigrations({ pool }),
+      PostgresMigrationValidationError
+    );
+  } finally {
+    await pool.query(
+      "UPDATE repoops_schema_migrations SET checksum = $1 WHERE version = 1",
+      [original]
+    );
+  }
+});
+
 test("insert-if-absent converges duplicate deliveries without replacing payload", { skip }, async () => {
   const first = received(1, "original-payload");
   const inserted = await store.insertIfAbsent(first.record, first.payload);
@@ -126,6 +153,24 @@ test("insert-if-absent converges duplicate deliveries without replacing payload"
   assert.equal(unchanged.authenticatedPayload.toString("utf8"), "original-payload");
 });
 
+test("concurrent first acceptance produces exactly one insert and one duplicate", { skip }, async () => {
+  const item = received(3, "concurrent-payload");
+  const results = await Promise.all([
+    store.insertIfAbsent(item.record, item.payload),
+    store.insertIfAbsent(item.record, item.payload)
+  ]);
+
+  assert.deepEqual(results.map((result) => result.type).sort(), ["existing", "inserted"]);
+  assert.equal(results[0].record.id, item.record.id);
+  assert.equal(results[1].record.id, item.record.id);
+
+  const count = await pool.query(
+    "SELECT count(*)::int AS count FROM repoops_webhook_inbox WHERE id = $1",
+    [item.record.id]
+  );
+  assert.equal(count.rows[0].count, 1);
+});
+
 test("compare-and-swap advances exactly one persisted version and rejects stale writers", { skip }, async () => {
   const item = await insert(2, "cas-payload");
   const queued = queueWebhookInboxRecord(item.record, { now: "2026-09-29T06:00:01Z" });
@@ -139,16 +184,36 @@ test("compare-and-swap advances exactly one persisted version and rejects stale 
   assert.equal(stale.type, "conflict");
   assert.equal(stale.record.version, 1);
   assert.equal(stale.record.state, WEBHOOK_INBOX_STATES.QUEUED);
+});
 
-  const processing = claimWebhookInboxRecord(first.record, {
+test("two workers racing the same version cannot both acquire the processing lease", { skip }, async () => {
+  const item = await insert(4, "lease-race");
+  const queued = await persistTransition(
+    item.record,
+    queueWebhookInboxRecord(item.record, { now: "2026-09-29T06:00:01Z" })
+  );
+
+  const workerA = claimWebhookInboxRecord(queued, {
     workerId: "worker-a",
     now: "2026-09-29T06:00:02Z",
     leaseMs: 30_000
   });
-  const second = await store.compareAndSwap(item.record.id, 1, processing);
-  assert.equal(second.type, "updated");
-  assert.equal(second.record.version, 2);
-  assert.equal(second.record.lease.workerId, "worker-a");
+  const workerB = claimWebhookInboxRecord(queued, {
+    workerId: "worker-b",
+    now: "2026-09-29T06:00:02Z",
+    leaseMs: 30_000
+  });
+
+  const results = await Promise.all([
+    store.compareAndSwap(queued.id, queued.version, workerA),
+    store.compareAndSwap(queued.id, queued.version, workerB)
+  ]);
+
+  assert.deepEqual(results.map((result) => result.type).sort(), ["conflict", "updated"]);
+  const current = await store.find(queued.id);
+  assert.equal(current.version, 2);
+  assert.equal(current.state, WEBHOOK_INBOX_STATES.PROCESSING);
+  assert.equal(["worker-a", "worker-b"].includes(current.lease.workerId), true);
 });
 
 test("recovery queries return only due work in deterministic order", { skip }, async () => {
