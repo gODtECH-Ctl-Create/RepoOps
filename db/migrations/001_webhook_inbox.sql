@@ -1,11 +1,11 @@
 CREATE TABLE IF NOT EXISTS repoops_webhook_inbox (
-  id text PRIMARY KEY,
+  id text PRIMARY KEY CHECK (id ~ '^ghd1_[a-f0-9]{64}$'),
   delivery_guid uuid NOT NULL UNIQUE,
   schema_version smallint NOT NULL CHECK (schema_version = 1),
   installation_id bigint NOT NULL CHECK (installation_id > 0),
   repository_id bigint NOT NULL CHECK (repository_id > 0),
-  event_name varchar(64) NOT NULL,
-  action varchar(64),
+  event_name varchar(64) NOT NULL CHECK (event_name ~ '^[a-z][a-z0-9_]{0,63}$'),
+  action varchar(64) CHECK (action IS NULL OR action ~ '^[a-z][a-z0-9_-]{0,63}$'),
   state text NOT NULL CHECK (state IN (
     'RECEIVED',
     'QUEUED',
@@ -19,9 +19,13 @@ CREATE TABLE IF NOT EXISTS repoops_webhook_inbox (
   )),
   processing_mode text CHECK (processing_mode IN ('normal', 'reconcile')),
   attempt_count integer NOT NULL DEFAULT 0 CHECK (attempt_count >= 0),
-  reason varchar(256),
+  reason varchar(256) CHECK (
+    reason IS NULL OR reason ~ '^[A-Za-z0-9][A-Za-z0-9._:/ -]{0,255}$'
+  ),
   next_attempt_at timestamptz,
-  lease_worker_id varchar(128),
+  lease_worker_id varchar(128) CHECK (
+    lease_worker_id IS NULL OR lease_worker_id ~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$'
+  ),
   lease_acquired_at timestamptz,
   lease_expires_at timestamptz,
   payload_sha256 char(64) NOT NULL CHECK (payload_sha256 ~ '^[a-f0-9]{64}$'),
