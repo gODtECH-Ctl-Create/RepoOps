@@ -12,10 +12,10 @@
 <p align="center">
   <a href="https://github.com/gODtECH-Ctl-Create/RepoOps/actions/workflows/ci.yml"><img alt="CI status" src="https://github.com/gODtECH-Ctl-Create/RepoOps/actions/workflows/ci.yml/badge.svg" /></a>
   <a href="https://github.com/gODtECH-Ctl-Create/RepoOps/actions/workflows/pages.yml"><img alt="GitHub Pages deployment" src="https://github.com/gODtECH-Ctl-Create/RepoOps/actions/workflows/pages.yml/badge.svg" /></a>
-  <a href="package.json"><img alt="Package version 0.2.0" src="https://img.shields.io/badge/version-0.2.0-6d5dfc.svg" /></a>
+  <a href="package.json"><img alt="Package version 0.3.0" src="https://img.shields.io/badge/version-0.3.0-6d5dfc.svg" /></a>
   <a href="https://github.com/gODtECH-Ctl-Create/RepoOps/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22+label%3A%22status%3A+ready%22+no%3Aassignee"><img alt="Good first issues" src="https://img.shields.io/github/issues/gODtECH-Ctl-Create/RepoOps/good%20first%20issue?label=good%20first%20issues" /></a>
   <a href="https://github.com/gODtECH-Ctl-Create/RepoOps/graphs/contributors"><img alt="Repository contributors" src="https://img.shields.io/github/contributors/gODtECH-Ctl-Create/RepoOps?label=contributors" /></a>
-  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/github/license/gODtECH-Ctl-Create/RepoOps" /></a>
+  <a href="https://github.com/gODtECH-Ctl-Create/RepoOps/blob/MASTER/LICENSE"><img alt="MIT license" src="https://img.shields.io/github/license/gODtECH-Ctl-Create/RepoOps" /></a>
 </p>
 
 <p align="center">
@@ -24,6 +24,8 @@
   <a href="https://godtech-ctl-create.github.io/RepoOps/contribute.html"><strong>Contributor Hub</strong></a>
   &nbsp;•&nbsp;
   <a href="docs/"><strong>Docs</strong></a>
+  &nbsp;•&nbsp;
+  <a href="docs/reusable-action.md"><strong>Reusable Action</strong></a>
   &nbsp;•&nbsp;
   <a href="docs/roadmap.md"><strong>Roadmap</strong></a>
   &nbsp;•&nbsp;
@@ -62,6 +64,7 @@ GitHub already gives maintainers issues, pull requests, checks, reviews, and aut
 | ✅ | [**All ready issues**](https://github.com/gODtECH-Ctl-Create/RepoOps/issues?q=is%3Aissue+is%3Aopen+label%3A%22status%3A+ready%22+no%3Aassignee+-label%3A%22status%3A+blocked%22) | Claimable work across difficulty levels |
 | 🤝 | [**Help wanted**](https://github.com/gODtECH-Ctl-Create/RepoOps/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) | Open work where additional contribution is welcome |
 | 👥 | [**Live contributors**](https://godtech-ctl-create.github.io/RepoOps/#contributors) | Public repository contribution activity without contributor ranking |
+| 🧩 | [**Reusable Action**](docs/reusable-action.md) | Add RepoOps to another repository without copying its runtime |
 
 ## 🧠 How RepoOps works
 
@@ -105,13 +108,15 @@ The architecture keeps event parsing, decisions, and GitHub mutations separate s
 | GitHub Pages product site + contributor hub | ✅ Implemented |
 | AI-assisted contributor contract (`AGENTS.md`) | ✅ Implemented |
 | Webhook delivery dedup + API retry/rate-limit primitives | ✅ Implemented — GitHub App reliability foundation only |
+| **Reusable GitHub Action** | ✅ Implemented — consume RepoOps without copying the runtime |
+| **Versioned Action release flow** | ✅ Implemented — stable major channel tags can move automatically |
 | Maintainer PR attention queue / hosted GitHub App / multi-repository control plane | 🗺️ Roadmap |
 
 > [!IMPORTANT]
 > RepoOps currently defaults to **non-destructive assignment behavior**. `autoRelease` is `false`; automatic destructive release is not part of the current workflow.
 
 > [!NOTE]
-> RepoOps does **not** yet ship an installable hosted GitHub App or reusable GitHub Action for unrelated repositories. The App reliability primitives are groundwork for that future control plane, not an installation surface today.
+> RepoOps now ships a reusable GitHub Action for the current IssueOps runtime. The hosted GitHub App is still a separate in-progress control-plane project and is not yet the installation path.
 
 ### Commands
 
@@ -146,6 +151,33 @@ contributorLimits:
 ```
 
 Unknown sections, unknown keys, unsafe values, and contradictory lifecycle policy are rejected rather than silently ignored. See [docs/configuration.md](docs/configuration.md).
+
+## 📦 Use RepoOps in another repository
+
+```yaml
+name: RepoOps
+
+on:
+  issue_comment:
+    types: [created]
+  issues:
+    types: [closed]
+  pull_request_target:
+    types: [closed]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  repoops:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: gODtECH-Ctl-Create/RepoOps@v0
+```
+
+Keep the repository policy in `.repoops.yml`. See [docs/reusable-action.md](docs/reusable-action.md) for permissions, versioning, fork/PR safety, and release behavior.
 
 ## 🤝 Contribute
 
@@ -194,7 +226,7 @@ npm run simulate -- test/fixtures/claim-event.json
 npm run simulate -- test/fixtures/closed-event.json
 ```
 
-The runtime currently has no third-party dependencies.
+The IssueOps Action runtime uses only Node.js built-ins, so a consumer repository does not need to install RepoOps dependencies to execute the current Action.
 
 ## 🛡️ Design & safety principles
 
@@ -226,11 +258,11 @@ GitHub App + multi-repository control plane
 Dashboard and analytics
 ```
 
-The immediate distribution goal is to make RepoOps usable outside its own repository without copying RepoOps source into every consumer repository. The hosted GitHub App comes after that reusable distribution layer and will keep GitHub as the primary contributor/maintainer workspace.
+The reusable Action is now the supported distribution path for the current IssueOps runtime. The hosted GitHub App comes after that distribution layer and will keep GitHub as the primary contributor/maintainer workspace.
 
-RepoOps is **pre-1.0**. Package version: **0.2.0**. No official GitHub Release has been published yet.
+RepoOps is **pre-1.0**. Package version: **0.3.0**. No GitHub Release has been published until the release workflow is run for `v0.3.0`.
 
-See the [product roadmap](docs/roadmap.md), [GitHub App reliability architecture](docs/github-app-reliability.md), [issue taxonomy](docs/issue-taxonomy.md), [release policy](docs/releases.md), and [changelog](CHANGELOG.md).
+See the [product roadmap](docs/roadmap.md), [reusable Action guide](docs/reusable-action.md), [GitHub App reliability architecture](docs/github-app-reliability.md), [issue taxonomy](docs/issue-taxonomy.md), [release policy](docs/releases.md), and [changelog](CHANGELOG.md).
 
 ## Assignment safety and reminders
 
@@ -239,12 +271,9 @@ and available, and close clears active states. Repeated deliveries use authentic
 operation receipts. Scheduled reminders consider bot-authored assignment age and
 explicit implementation PR links; they never automatically release work.
 
-See [assignment configuration](docs/configuration.md), [retry recovery](docs/idempotency.md),
-and [scanner operation and live validation](docs/stale-assignments.md).
+See [assignment configuration](docs/configuration.md), [retry recovery](docs/idempotency.md), and [scanner operation and live validation](docs/stale-assignments.md).
 
-The [versioned operational event contract](docs/events.md) defines immutable facts
-and replay validation for future audit and history consumers. Audit emission and
-persistent event storage remain separate work.
+The [versioned operational event contract](docs/events.md) defines immutable facts and replay validation for future audit and history consumers. Audit emission and persistent event storage remain separate work.
 
 ---
 
@@ -252,6 +281,7 @@ persistent event storage remain separate work.
   <strong>RepoOps</strong> · Repository operations that keep GitHub work moving.<br />
   <a href="https://godtech-ctl-create.github.io/RepoOps/">Website</a> ·
   <a href="https://godtech-ctl-create.github.io/RepoOps/contribute.html">Contribute</a> ·
+  <a href="docs/reusable-action.md">Reusable Action</a> ·
   <a href="docs/roadmap.md">Roadmap</a> ·
   <a href="LICENSE">MIT License</a>
 </p>
