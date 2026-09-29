@@ -8,6 +8,10 @@ The format follows a Keep a Changelog-style categories and the project intends t
 
 ### Added
 
+- Reusable composite GitHub Action for consuming the current RepoOps IssueOps runtime without copying RepoOps source into consumer repositories, with repository-local `.repoops.yml` policy support and least-privilege token guidance.
+
+- Versioned release workflow that creates GitHub Releases and moves stable major-channel tags such as `v0` for compatible releases.
+
 - GitHub App identity/authentication foundation with RS256 App JWT generation, isolated private-key configuration, installation-token minting, deterministic scope-aware caching, refresh-window handling, concurrent single-flight acquisition, safe invalidation, and sanitized GitHub failure metadata.
 
 - PostgreSQL persistence for the hosted durable webhook inbox, including versioned/checksummed migrations, atomic delivery+payload acceptance, compare-and-swap state updates, indexed recovery queries, payload-integrity verification, scoped repository reads, and real PostgreSQL CI integration tests.
@@ -63,4 +67,3 @@ Initial RepoOps proof of concept:
 - GitHub REST API client
 - automated issue assignment and `status: in-progress` label
 - deterministic core tests
-- CI workflow
