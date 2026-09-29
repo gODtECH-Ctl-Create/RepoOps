@@ -1,6 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-const SIGNATURE_PREFIX = "sha256=";
 const SIGNATURE_PATTERN = /^sha256=([a-f0-9]{64})$/i;
 
 export class WebhookSignatureConfigurationError extends Error {
@@ -59,9 +58,3 @@ export function verifyGitHubWebhookSignature({ secret, signature, body }) {
   if (supplied.length !== expected.length) return false;
   return timingSafeEqual(supplied, expected);
 }
-
-export function signatureHeaderName() {
-  return "x-hub-signature-256";
-}
-
-export const GITHUB_SIGNATURE_PREFIX = SIGNATURE_PREFIX;
