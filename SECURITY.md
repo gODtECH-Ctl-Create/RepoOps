@@ -38,6 +38,29 @@ RepoOps aims to follow these rules:
 - safe retries and idempotent operations where possible
 - no secrets committed to the repository
 
+## GitHub App webhook verification
+
+A future hosted RepoOps GitHub App must authenticate every webhook before the delivery can consume application work.
+
+`src/github/webhook-signature.mjs` verifies GitHub's `X-Hub-Signature-256` HMAC-SHA256 signature against the exact raw request body using constant-time comparison.
+
+The required ingress order is:
+
+```text
+receive raw request
+  -> verify X-Hub-Signature-256
+  -> reject unauthenticated/malformed request
+  -> parse trusted envelope/payload
+  -> register delivery in the durable inbox
+  -> enqueue accepted work
+```
+
+Do not parse and re-serialize JSON before signature verification. Do not add a production path that bypasses webhook verification. The webhook secret must be supplied securely by the hosted runtime and must never be committed, logged, included in errors, or written into GitHub comments.
+
+Delivery GUID validation/deduplication is a separate reliability control; it does not authenticate the sender.
+
+See `docs/github-app-reliability.md` for the broader webhook, retry, reconciliation, and outage model.
+
 ## Supported versions
 
 Until RepoOps reaches a stable release, security fixes are applied to the latest code on `MASTER`. A version support matrix will be added when versioned releases begin.
