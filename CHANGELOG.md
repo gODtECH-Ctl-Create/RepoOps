@@ -8,6 +8,8 @@ The format follows a Keep a Changelog-style categories and the project intends t
 
 ### Added
 
+- PostgreSQL persistence for the hosted durable webhook inbox, including versioned/checksummed migrations, atomic delivery+payload acceptance, compare-and-swap state updates, indexed recovery queries, payload-integrity verification, scoped repository reads, and real PostgreSQL CI integration tests.
+
 - Hosted control-plane process skeleton with validated runtime configuration, dependency-injectable health/readiness checks, bounded graceful shutdown, and a separate entry point that leaves current GitHub Actions repository operations unchanged.
 
 - Independent post-merge acknowledgment on the merged pull request, with first-contributor recognition and duplicate-safe recovery when the detailed issue follow-up already exists.
@@ -41,6 +43,8 @@ The format follows a Keep a Changelog-style categories and the project intends t
 - contributor, architecture, development, security, and command documentation
 
 ### Changed
+
+- CI now installs the pinned `pg` client and validates hosted persistence against a PostgreSQL 16 service in addition to deterministic unit tests.
 
 - Commands and scanner share a bounded repository mutation queue to prevent overlapping writes.
 
