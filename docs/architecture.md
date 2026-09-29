@@ -1,6 +1,6 @@
 # RepoOps Architecture
 
-RepoOps is an event-driven repository operations toolkit. The current version runs inside GitHub Actions and uses GitHub as its source of truth.
+RepoOps is an event-driven repository operations toolkit. Repository automation currently runs inside GitHub Actions and uses GitHub as its source of truth. A separate hosted control-plane process boundary now exists for future GitHub App work, but it does not yet process GitHub webhooks or mutate repositories.
 
 ## Current request flow
 
@@ -22,6 +22,24 @@ src/github/*
 repository mutation
 ```
 
+## Hosted control-plane process boundary
+
+```text
+process start
+    ↓
+src/control-plane/index.mjs
+    ↓
+runtime configuration
+    ↓
+HTTP lifecycle
+    ↓
+/healthz + /readyz
+```
+
+The hosted process currently owns only process lifecycle and health/readiness. Future PostgreSQL, GitHub App authentication, webhook ingress, durable workers, retry/reconciliation, and operator tooling should plug into this boundary without duplicating repository policy.
+
+See [Hosted control plane](control-plane.md) and [GitHub App reliability architecture](github-app-reliability.md).
+
 ## Directory responsibilities
 
 ### `.github/workflows/`
@@ -39,8 +57,15 @@ Contains GitHub REST API interactions and repository mutations.
 
 This boundary lets tests exercise policy without requiring live API calls and gives us one place to add retries, rate-limit handling, observability, and future GitHub App authentication.
 
+### `src/control-plane/`
+Contains the hosted process/runtime boundary for the future GitHub App.
+
+It owns runtime configuration, HTTP lifecycle, liveness/readiness, and graceful process shutdown. Keep transport/process concerns here and keep repository policy in `src/core`. GitHub API behavior belongs in `src/github`, and future database/queue implementations should use explicit adapters rather than embedding persistence logic in HTTP handlers.
+
+The control plane must not silently become a second independent mutation engine while GitHub Actions is still handling the same repository operations. Runtime migration requires an explicit cutover design.
+
 ### `src/index.mjs`
-Current event entry point. It parses GitHub-provided event context, calls core decision logic, then invokes GitHub API operations.
+Current GitHub Actions entry point. It parses GitHub-provided event context, calls core decision logic, then invokes GitHub API operations.
 
 As command support grows, this should evolve into a dispatcher rather than a long chain of command-specific conditionals.
 
@@ -56,6 +81,7 @@ Contains deterministic tests for command and policy behavior.
 5. **Avoid destructive surprises.** Closing, deleting, unassigning, merging, or otherwise destructive actions need explicit policy and safeguards.
 6. **Operations should tolerate retries.** GitHub Actions and webhooks can be delivered or retried in ways that make idempotency important.
 7. **Configuration should replace repository-specific assumptions.** Future behavior should be controlled through a validated RepoOps configuration file.
+8. **One mutation authority per operation.** During migration, GitHub Actions and the hosted control plane must not independently execute the same logical repository operation.
 
 ## Near-term architecture evolution
 
@@ -73,11 +99,12 @@ scheduled maintenance
 maintainer work queue
 event/audit model
 
-later
-GitHub App → webhooks → API → queue/workers → PostgreSQL → dashboard
+hosted control plane
+process/runtime → PostgreSQL → GitHub App auth → webhook ingress → queue/workers
+    → reconciliation/recovery → organization install flow → dashboard
 ```
 
-The hosted GitHub App must preserve the same deterministic core while moving event receipt, durable delivery state, retry scheduling, and installation authentication into a control-plane runtime. See [GitHub App reliability architecture](github-app-reliability.md).
+The hosted GitHub App must preserve the same deterministic core while moving event receipt, durable delivery state, retry scheduling, and installation authentication into the control-plane runtime. See [GitHub App reliability architecture](github-app-reliability.md).
 
 ## Operational event model
 
@@ -121,7 +148,7 @@ by lifecycle policies and future PR queues. See [relationship rules](linked-pull
 
 `src/github/client.mjs` exposes bounded structured GitHub API failure metadata, while `src/github/retry.mjs` classifies retryable reads, rate limits, permanent failures, and ambiguous mutation outcomes. Mutation failures that may already have reached GitHub require reconciliation before another write.
 
-These primitives are intentionally runtime-agnostic. The future hosted App still needs a persistent inbox adapter/database, queue/workers, retry scheduler, failed-delivery recovery, installation-token lifecycle, reconciliation workers, and operator/dead-letter tooling. See [GitHub App reliability architecture](github-app-reliability.md) for the complete reliability contract.
+These primitives are intentionally runtime-agnostic. The hosted control-plane skeleton provides the process boundary, but the future App still needs a persistent inbox adapter/database, queue/workers, retry scheduler, failed-delivery recovery, installation-token lifecycle, reconciliation workers, and operator/dead-letter tooling. See [GitHub App reliability architecture](github-app-reliability.md) for the complete reliability contract.
 
 ## Scheduled reminders
 
