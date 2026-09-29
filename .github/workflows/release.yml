@@ -1,0 +1,87 @@
+name: Release RepoOps
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Semantic Versioning version, without the leading v (for example 0.3.0)
+        required: true
+        type: string
+      prerelease:
+        description: Publish as a prerelease and do not move the stable major channel
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out release target
+        uses: actions/checkout@v4
+        with:
+          ref: MASTER
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Validate version
+        env:
+          VERSION: ${{ inputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ ! "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Version must be a valid Semantic Versioning value such as 0.3.0."
+            exit 1
+          fi
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+          PRERELEASE: ${{ inputs.prerelease }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          TAG="v${VERSION}"
+
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            echo "::error::Release ${TAG} already exists."
+            exit 1
+          fi
+
+          if [[ "${PRERELEASE}" == "true" ]]; then
+            gh release create "${TAG}" \
+              --target MASTER \
+              --title "RepoOps ${TAG}" \
+              --generate-notes \
+              --prerelease
+          else
+            gh release create "${TAG}" \
+              --target MASTER \
+              --title "RepoOps ${TAG}" \
+              --generate-notes
+          fi
+
+      - name: Move stable major channel
+        if: inputs.prerelease == false
+        env:
+          VERSION: ${{ inputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          TAG="v${VERSION}"
+          MAJOR="v${VERSION%%.*}"
+
+          git fetch --tags --force
+
+          git tag -fa "${MAJOR}" "${TAG}" -m "RepoOps ${MAJOR} channel -> ${TAG}"
+          git push origin "refs/tags/${MAJOR}" --force
+
+          echo "Stable channel ${MAJOR} now points to ${TAG}."

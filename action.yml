@@ -1,0 +1,43 @@
+name: RepoOps
+description: GitHub repository operations automation for issue assignment, workflow state, and contributor follow-up.
+author: gODtECH
+branding:
+  icon: git-pull-request
+  color: purple
+
+inputs:
+  github-token:
+    description: GitHub token used by RepoOps. Defaults to the workflow's built-in GitHub token.
+    required: false
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: "20"
+
+    - name: Run RepoOps
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token || github.token }}
+      run: |
+        set -euo pipefail
+
+        if [[ -z "${GITHUB_TOKEN:-}" ]]; then
+          echo "::error::RepoOps requires a GitHub token."
+          exit 1
+        fi
+
+        if [[ -z "${GITHUB_EVENT_PATH:-}" || ! -f "${GITHUB_EVENT_PATH}" ]]; then
+          echo "::error::RepoOps requires the GitHub event payload."
+          exit 1
+        fi
+
+        if [[ ! -f "${GITHUB_ACTION_PATH}/src/index.mjs" ]]; then
+          echo "::error::RepoOps action runtime is missing from ${GITHUB_ACTION_PATH}."
+          exit 1
+        fi
+
+        node "${GITHUB_ACTION_PATH}/src/index.mjs"
