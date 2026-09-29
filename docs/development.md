@@ -4,6 +4,7 @@
 
 - Node.js 20+
 - Git
+- PostgreSQL 16+ when working on hosted persistence/integration tests
 
 ## Setup
 
@@ -20,6 +21,8 @@ npm run check
 npm test
 npm run check
 npm run start:control-plane
+npm run db:migrate
+npm run test:postgres
 ```
 
 `npm run check` is the minimum verification expected before opening a pull request.
@@ -43,19 +46,55 @@ REPOOPS_PORT=3000 \
 npm run start:control-plane
 ```
 
-The initial service exposes only `GET /healthz` and `GET /readyz`. Do not place repository policy or GitHub mutations directly in HTTP handlers. Future persistence, App authentication, webhook, and worker layers should be added behind explicit adapters while preserving the existing deterministic core.
+The current service exposes only `GET /healthz` and `GET /readyz`. Do not place repository policy or GitHub mutations directly in HTTP handlers. PostgreSQL persistence lives behind its own adapter; future App authentication, webhook, and worker layers should use the same boundary pattern while preserving the deterministic core.
 
-See [Hosted control plane](control-plane.md) for configuration, health, shutdown, and architecture boundaries.
+See [Hosted control plane](control-plane.md) for configuration, health, shutdown, PostgreSQL, and architecture boundaries.
+
+## PostgreSQL development
+
+Database credentials use a dedicated secret-bearing environment variable:
+
+```bash
+REPOOPS_DATABASE_URL=postgresql://repoops:repoops@localhost:5432/repoops
+```
+
+Apply migrations:
+
+```bash
+REPOOPS_DATABASE_URL=postgresql://repoops:repoops@localhost:5432/repoops \
+npm run db:migrate
+```
+
+Run the real PostgreSQL integration suite against a **disposable test database**:
+
+```bash
+REPOOPS_TEST_DATABASE_URL=postgresql://repoops:repoops@localhost:5432/repoops_test \
+npm run test:postgres
+```
+
+The integration suite truncates `repoops_webhook_inbox`. Never use a production or shared database for `REPOOPS_TEST_DATABASE_URL`.
+
+CI provides PostgreSQL 16 and runs the integration tests as part of `npm run check`.
+
+### Migration rules
+
+- migration files live under `db/migrations/`;
+- use a monotonically increasing numeric prefix such as `002_add_event_store.sql`;
+- never edit a migration after it has been applied to an environment;
+- the migration runner records a SHA-256 checksum and will reject changed migration history;
+- schema changes that affect the core inbox model must preserve `src/core/webhook-inbox.mjs` as the authoritative state contract;
+- add integration coverage for constraints, indexes, migration behavior, and concurrency semantics introduced by the migration.
 
 ## Working on an issue
 
 1. Find an available issue.
 2. Comment `/claim`.
-3. Create a branch from the latest `MASTER`.
-4. Implement the smallest complete change.
-5. Add or update tests.
-6. Run `npm run check`.
-7. Open a pull request and link the issue.
+3. Wait for RepoOps to confirm the claim before starting implementation.
+4. Create a branch from the latest `MASTER`.
+5. Implement the smallest complete change.
+6. Add or update tests.
+7. Run `npm run check`.
+8. Open a pull request and link the issue.
 
 Example:
 
@@ -70,6 +109,8 @@ git checkout -b feat/123-unclaim-command
 Prefer pure tests over live GitHub experiments.
 
 For command logic, construct event-like input and assert the returned decision. Live repository testing should be used only as final integration proof after deterministic tests pass.
+
+For persistence logic, pure mapping/validation tests are not enough: concurrency, uniqueness, compare-and-swap, migrations, constraints, and recovery queries require a real PostgreSQL integration test.
 
 ## Adding a command
 
@@ -91,12 +132,15 @@ When editing `.github/workflows/`:
 - avoid executing contributor-controlled text
 - use concurrency where simultaneous operations could race
 - ensure retrying a workflow does not create harmful duplicate state
+- use test-only credentials for CI services and never repository production secrets
 
 ## Dependency policy
 
-RepoOps currently has no third-party runtime dependencies. Add a dependency only when it materially reduces complexity or risk and cannot reasonably be handled by Node.js or the GitHub API directly.
+RepoOps keeps runtime dependencies intentionally small. `pg` is the first hosted-runtime dependency because Node.js does not provide a PostgreSQL wire client and the control plane requires real durable storage.
 
-Pull requests adding dependencies should explain why the dependency is needed.
+Add another dependency only when it materially reduces complexity or risk and cannot reasonably be handled by Node.js, PostgreSQL, or the GitHub API directly.
+
+Pull requests adding dependencies should explain why the dependency is needed and pin the direct dependency version deliberately.
 
 ## Commit guidance
 
@@ -119,6 +163,7 @@ A contribution is normally complete when:
 - documentation is updated when user-visible behavior changes
 - workflow/security impact is explained
 - no unrelated changes are included
+
 ## Scanner validation
 
 Use the Stale assignment reminders workflow in dry-run mode for existing issues,
