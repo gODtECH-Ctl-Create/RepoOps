@@ -66,6 +66,9 @@ test("PostgreSQL pool creation keeps secret config in the dedicated adapter boun
   assert.deepEqual(observed, {
     connectionString: "postgres://repoops:secret@db/repoops",
     max: 7,
+    connectionTimeoutMillis: 2_000,
+    statement_timeout: 5_000,
+    query_timeout: 6_000,
     application_name: "repoops-control-plane"
   });
 });

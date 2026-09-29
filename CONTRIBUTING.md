@@ -31,7 +31,7 @@ npm install
 npm run check
 ```
 
-RepoOps currently has no third-party runtime dependencies.
+The hosted PostgreSQL adapter uses the pinned `pg` dependency. See `docs/development.md` for disposable-database integration tests.
 
 ## Branch naming
 

@@ -1,6 +1,6 @@
 # RepoOps Architecture
 
-RepoOps is an event-driven repository operations toolkit. Repository automation currently runs inside GitHub Actions and uses GitHub as its source of truth. A separate hosted control-plane process boundary, PostgreSQL persistence adapter, and GitHub App authentication boundary now exist for future App work, but the hosted runtime does not yet process production GitHub webhooks or mutate repositories.
+RepoOps is an event-driven repository operations toolkit. Repository automation currently runs inside GitHub Actions and uses GitHub as its source of truth. A separate hosted control-plane process boundary, PostgreSQL persistence adapter, and GitHub App authentication boundary now exist for future App work, and authenticated HTTP webhook receipt now persists deliveries durably. Hosted workers and repository mutations are not yet enabled.
 
 ## Current request flow
 
@@ -44,7 +44,7 @@ App private-key identity → RS256 JWT
 installation access token manager/cache
 ```
 
-The hosted process still has no production webhook route, queue/worker execution, or repository mutation authority.
+The hosted process exposes `POST /webhooks/github` through `webhook-http.mjs`, composed with PostgreSQL in `hosted.mjs`. It has no queue/worker execution or repository mutation authority.
 
 See [Hosted control plane](control-plane.md), [GitHub App authentication](github-app-auth.md), [webhook inbox processing](webhook-inbox.md), and [GitHub App reliability architecture](github-app-reliability.md).
 
@@ -144,7 +144,7 @@ process/runtime → PostgreSQL → GitHub App auth → webhook ingress → queue
     → reconciliation/recovery → organization install flow → dashboard
 ```
 
-The process/runtime, PostgreSQL persistence, and GitHub App authentication foundations now exist. The next hosted milestone is production webhook ingress wired to verified durable acceptance.
+The process/runtime, PostgreSQL persistence, and GitHub App authentication foundations now exist. Production webhook ingress now composes those foundations. Queue/workers are the next hosted milestone.
 
 The hosted GitHub App must preserve the same deterministic core while moving event receipt, durable delivery state, retry scheduling, and installation authentication into the control-plane runtime. See [GitHub App reliability architecture](github-app-reliability.md).
 
@@ -186,7 +186,7 @@ App private keys, JWTs, and installation access tokens are credentials. Installa
 
 `src/github/client.mjs` exposes bounded structured GitHub API failure metadata, while `src/github/retry.mjs` classifies retryable reads, rate limits, permanent failures, and ambiguous mutation outcomes. Mutation failures that may already have reached GitHub require reconciliation before another write.
 
-The future App still needs a production webhook endpoint, queue/workers, retry scheduling, failed-delivery recovery, reconciliation workers, operator/dead-letter tooling, installation lifecycle persistence, and explicit mutation cutover. See [GitHub App reliability architecture](github-app-reliability.md) for the complete reliability contract.
+The future App still needs queue/workers, retry scheduling, failed-delivery recovery, reconciliation workers, operator/dead-letter tooling, installation lifecycle persistence, and explicit mutation cutover. See [GitHub App reliability architecture](github-app-reliability.md) for the complete reliability contract.
 
 ## Scheduled reminders
 

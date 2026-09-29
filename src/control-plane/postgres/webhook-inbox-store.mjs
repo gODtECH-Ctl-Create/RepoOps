@@ -121,7 +121,6 @@ function sameAcceptanceFacts(left, right) {
     && left.delivery.action === right.delivery.action
     && left.delivery.installationId === right.delivery.installationId
     && left.delivery.repositoryId === right.delivery.repositoryId
-    && left.delivery.receivedAt === right.delivery.receivedAt
     && left.payload.sha256 === right.payload.sha256
     && left.payload.byteLength === right.payload.byteLength;
 }

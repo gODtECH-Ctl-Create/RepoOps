@@ -322,3 +322,50 @@ test("database constraints reject invalid processing rows independently of appli
     (error) => error?.code === "23514"
   );
 });
+
+test('HTTP acceptance is durable across server restart and later concurrent redelivery', { skip }, async () => {
+  const { createHmac } = await import('node:crypto');
+  const { createControlPlaneServer } = await import('../src/control-plane/server.mjs');
+  const { createWebhookHttpHandler } = await import('../src/control-plane/webhook-http.mjs');
+  const secret = 'integration-test-only';
+  const payload = Buffer.from(JSON.stringify({ action: 'created', installation: { id: 101 }, repository: { id: 202 }, comment: { body: '/claim café' } }));
+  let timestamp = '2026-09-29T06:00:00.000Z';
+  const start = async (inbox = store) => {
+    const service = createControlPlaneServer({ webhookHandler: createWebhookHttpHandler({ secret, store: inbox, now: () => timestamp }) });
+    await new Promise(resolve => service.server.listen(0, '127.0.0.1', resolve));
+    return { service, url: `http://127.0.0.1:${service.server.address().port}/webhooks/github` };
+  };
+  const send = async (url, bytes = payload) => {
+    const response = await fetch(url, { method: 'POST', body: bytes, headers: {
+      'content-type': 'application/json', 'x-github-event': 'issue_comment', 'x-github-delivery': guid(96),
+      'x-hub-signature-256': `sha256=${createHmac('sha256', secret).update(bytes).digest('hex')}`
+    } });
+    await response.text(); return response.status;
+  };
+  let running = await start();
+  try {
+    assert.deepEqual(await Promise.all([send(running.url), send(running.url)]), [202, 202]);
+    await running.service.close();
+    timestamp = '2026-09-29T07:00:00.000Z';
+    running = await start();
+    assert.deepEqual(await Promise.all([send(running.url), send(running.url)]), [202, 202]);
+    const id = delivery(96).id;
+    const persisted = await store.readWithPayload(id);
+    assert.deepEqual(persisted.authenticatedPayload, payload);
+    assert.equal(persisted.record.createdAt, '2026-09-29T06:00:00.000Z');
+    assert.equal(persisted.record.version, 0);
+    assert.equal((await pool.query('SELECT count(*)::int AS count FROM repoops_webhook_inbox')).rows[0].count, 1);
+    assert.equal(await send(running.url, Buffer.from(payload.toString().replace('café', 'changed'))), 409);
+    await running.service.close();
+    // Commit succeeds but transport loses the response. Redelivery must converge.
+    running = await start({ async insertIfAbsent(record, bytes) { await store.insertIfAbsent(record, bytes); throw new Error('lost database response'); } });
+    assert.equal(await send(running.url), 503);
+    await running.service.close();
+    running = await start(); assert.equal(await send(running.url), 202);
+    // A real database constraint failure is never acknowledged.
+    await pool.query("ALTER TABLE repoops_webhook_inbox ADD CONSTRAINT test_reject_acceptance CHECK (false) NOT VALID");
+    try { assert.equal(await send(running.url), 503); }
+    finally { await pool.query('ALTER TABLE repoops_webhook_inbox DROP CONSTRAINT test_reject_acceptance'); }
+    assert.equal(await send(running.url), 202);
+  } finally { await running.service.close(); }
+});

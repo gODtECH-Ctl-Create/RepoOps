@@ -65,7 +65,7 @@ See `docs/github-app-auth.md` for the authentication and cache contract.
 
 ## GitHub App webhook verification
 
-A future hosted RepoOps GitHub App must authenticate every webhook before the delivery can consume application work.
+The hosted webhook endpoint authenticates every supported delivery before parsing or persistence. `REPOOPS_WEBHOOK_SECRET` is mandatory at startup and is never included in runtime diagnostics.
 
 `src/github/webhook-signature.mjs` verifies GitHub's `X-Hub-Signature-256` HMAC-SHA256 signature against the exact raw request body using constant-time comparison.
 
@@ -108,3 +108,5 @@ SQL migrations are checksum tracked. Do not edit migration history after it has 
 ## Supported versions
 
 Until RepoOps reaches a stable release, security fixes are applied to the latest code on `MASTER`. A version support matrix will be added when versioned releases begin.
+
+The webhook HTTP route bounds payloads to 25 MiB and acceptance to 8 seconds; rejects duplicate security headers and compressed/non-JSON bodies; returns only fixed public errors; and never acknowledges before durable acceptance. Deploy behind TLS with ingress connection/rate limits. A timed-out insert may commit; redelivery must converge through the unique GUID. First receipt time is retained but is not a replay identity fact. No worker or GitHub mutation is executed by the receiver.
