@@ -47,42 +47,39 @@ function isRateLimited(error) {
     || /(?:secondary\s+)?rate\s+limit/i.test(error.responseMessage ?? "");
 }
 
+function reconcile(reason) {
+  return Object.freeze({ action: "reconcile", reason, retryAfterMs: null });
+}
+
 /**
- * Return scheduling guidance only. This function never sleeps and never retries.
- * Workers remain responsible for persisting the decision and scheduling future work.
+ * Return scheduling/reconciliation guidance only. This function never sleeps and
+ * never performs a retry itself.
+ *
+ * Set `mutation: true` when the failed request may have changed GitHub state.
+ * Network/timeout/5xx failures for mutations are ambiguous because GitHub may
+ * have committed the write before the response was lost; those require a fresh
+ * state inspection before another write is attempted.
  */
 export function classifyGitHubFailure(error, {
   attempt = 1,
   nowMs = Date.now(),
   baseDelayMs = DEFAULT_BASE_DELAY_MS,
   maxDelayMs = DEFAULT_MAX_DELAY_MS,
-  maxRateLimitDelayMs = DEFAULT_MAX_RATE_LIMIT_DELAY_MS
+  maxRateLimitDelayMs = DEFAULT_MAX_RATE_LIMIT_DELAY_MS,
+  mutation = false
 } = {}) {
   const fallbackDelayMs = boundedBackoffMs(attempt, { baseDelayMs, maxDelayMs });
   const rateLimitCap = positiveInteger(maxRateLimitDelayMs, DEFAULT_MAX_RATE_LIMIT_DELAY_MS);
 
-  if (error instanceof AmbiguousOperationError) {
-    return Object.freeze({
-      action: "reconcile",
-      reason: "ambiguous-mutation",
-      retryAfterMs: null
-    });
-  }
+  if (error instanceof AmbiguousOperationError) return reconcile("ambiguous-mutation");
 
   if (error instanceof GitHubNetworkError) {
-    return Object.freeze({
-      action: "retry",
-      reason: "network",
-      retryAfterMs: fallbackDelayMs
-    });
+    if (mutation) return reconcile("network-after-mutation-attempt");
+    return Object.freeze({ action: "retry", reason: "network", retryAfterMs: fallbackDelayMs });
   }
 
   if (!(error instanceof GitHubApiError)) {
-    return Object.freeze({
-      action: "fail",
-      reason: "unknown-error",
-      retryAfterMs: null
-    });
+    return Object.freeze({ action: "fail", reason: "unknown-error", retryAfterMs: null });
   }
 
   if (isRateLimited(error)) {
@@ -94,6 +91,7 @@ export function classifyGitHubFailure(error, {
   }
 
   if (error.status === 408 || error.status >= 500) {
+    if (mutation) return reconcile("transient-response-after-mutation-attempt");
     return Object.freeze({
       action: "retry",
       reason: "github-transient",
@@ -102,32 +100,16 @@ export function classifyGitHubFailure(error, {
   }
 
   if ([401, 403].includes(error.status)) {
-    return Object.freeze({
-      action: "fail",
-      reason: "authorization",
-      retryAfterMs: null
-    });
+    return Object.freeze({ action: "fail", reason: "authorization", retryAfterMs: null });
   }
 
   if (error.status === 404) {
-    return Object.freeze({
-      action: "fail",
-      reason: "resource-unavailable",
-      retryAfterMs: null
-    });
+    return Object.freeze({ action: "fail", reason: "resource-unavailable", retryAfterMs: null });
   }
 
   if (error.status === 422) {
-    return Object.freeze({
-      action: "fail",
-      reason: "validation",
-      retryAfterMs: null
-    });
+    return Object.freeze({ action: "fail", reason: "validation", retryAfterMs: null });
   }
 
-  return Object.freeze({
-    action: "fail",
-    reason: "github-permanent",
-    retryAfterMs: null
-  });
+  return Object.freeze({ action: "fail", reason: "github-permanent", retryAfterMs: null });
 }
