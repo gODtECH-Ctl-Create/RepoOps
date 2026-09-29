@@ -77,6 +77,8 @@ later
 GitHub App → webhooks → API → queue/workers → PostgreSQL → dashboard
 ```
 
+The hosted GitHub App must preserve the same deterministic core while moving event receipt, durable delivery state, retry scheduling, and installation authentication into a control-plane runtime. See [GitHub App reliability architecture](github-app-reliability.md).
+
 ## Operational event model
 
 `src/core/events.mjs` defines strict version-1 immutable operational facts with
@@ -93,6 +95,7 @@ support for future event types does not implement their underlying actions.
 Treat issue bodies, comments, branch names, pull request data, and other contributor-controlled fields as untrusted input.
 
 Never interpolate untrusted GitHub content into shell commands or dynamically execute it.
+
 ## Idempotent operations
 
 `src/core/idempotency.mjs` orchestrates injected stores and mutation steps without
@@ -107,6 +110,14 @@ when needed. Assignment reminder/expiry settings are policy, not release automat
 `src/github/linked-pull-requests.mjs` collects explicit GitHub closing/manual PR
 relationships with cursor pagination. Its normalized read-only result is reusable
 by lifecycle policies and future PR queues. See [relationship rules](linked-pull-requests.md).
+
+## Webhook and API reliability foundations
+
+`src/core/webhook-delivery.mjs` defines replay-safe GitHub webhook delivery registration through an injected durable store. The GitHub delivery GUID supplies delivery identity; payload text does not.
+
+`src/github/client.mjs` exposes bounded structured GitHub API failure metadata, while `src/github/retry.mjs` classifies retryable reads, rate limits, permanent failures, and ambiguous mutation outcomes. Mutation failures that may already have reached GitHub require reconciliation before another write.
+
+These primitives are intentionally runtime-agnostic. The future hosted App still needs a persistent inbox, queue/workers, retry scheduler, failed-delivery recovery, installation-token lifecycle, reconciliation workers, and operator/dead-letter tooling. See [GitHub App reliability architecture](github-app-reliability.md) for the complete reliability contract.
 
 ## Scheduled reminders
 
