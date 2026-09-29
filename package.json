@@ -8,8 +8,10 @@
     "test": "node --test",
     "check:scripts": "node --check scripts/simulate.mjs && node --check scripts/sync-labels.mjs && node --check scripts/inspect-linked-prs.mjs && node --check scripts/scan-stale-assignments.mjs && node --check scripts/validate-stale-scanner.mjs",
     "check:site": "node --check site/data.mjs && node --check site/app.mjs && node --check site/hub-data.mjs && node --check site/contribute.mjs",
-    "check": "npm run check:scripts && npm run check:site && npm test",
-    "simulate": "node scripts/simulate.mjs"
+    "check:control-plane": "node --check src/control-plane/config.mjs && node --check src/control-plane/server.mjs && node --check src/control-plane/runtime.mjs && node --check src/control-plane/index.mjs",
+    "check": "npm run check:scripts && npm run check:site && npm run check:control-plane && npm test",
+    "simulate": "node scripts/simulate.mjs",
+    "start:control-plane": "node src/control-plane/index.mjs"
   },
   "engines": {
     "node": ">=20"
