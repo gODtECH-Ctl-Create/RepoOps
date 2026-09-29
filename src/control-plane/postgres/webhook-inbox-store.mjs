@@ -137,7 +137,11 @@ function normalizeQueryTime(value, field = "now") {
   if (typeof value !== "string" || !Number.isFinite(Date.parse(value))) {
     throw new TypeError(`PostgreSQL webhook inbox ${field} must be an ISO timestamp`);
   }
-  return new Date(value).toISOString();
+  const normalized = new Date(value).toISOString();
+  if (!(normalized === value || normalized.replace(".000Z", "Z") === value)) {
+    throw new TypeError(`PostgreSQL webhook inbox ${field} must be an ISO timestamp`);
+  }
+  return normalized;
 }
 
 function insertParameters(record, payloadBytes) {
