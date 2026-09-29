@@ -27,6 +27,8 @@
   &nbsp;•&nbsp;
   <a href="docs/roadmap.md"><strong>Roadmap</strong></a>
   &nbsp;•&nbsp;
+  <a href="AGENTS.md"><strong>AI Contributor Guide</strong></a>
+  &nbsp;•&nbsp;
   <a href="SECURITY.md"><strong>Security</strong></a>
 </p>
 
@@ -43,8 +45,8 @@ GitHub already gives maintainers issues, pull requests, checks, reviews, and aut
 | --- | --- |
 | Claimed work quietly goes stale | Track assignment lifecycle, reminder policy, and linked implementation work |
 | Ready, blocked, and active work blur together | Enforce deterministic workflow-state transitions |
-| GitHub retries or duplicate deliveries repeat mutations | Use idempotent operations and durable receipts |
-| PRs sit open for different reasons | Build explicit maintainer-attention states and queues |
+| GitHub retries or duplicate deliveries repeat mutations | Use idempotent operations, durable receipts, and reconciliation-safe foundations |
+| PRs sit open for different reasons | Build explicit timing/state foundations toward maintainer-attention queues |
 | Contributors cannot tell what is safe to pick up | Surface live ready work through the Contributor Hub |
 | Automation changes repository state without enough context | Keep decisions testable and build toward auditable operational history |
 
@@ -80,7 +82,7 @@ flowchart LR
     class E action;
 ```
 
-The architecture keeps event parsing, decisions, and GitHub mutations separate so core behavior can be tested without making live API calls. See the [architecture guide](docs/architecture.md).
+The architecture keeps event parsing, decisions, and GitHub mutations separate so core behavior can be tested without making live API calls. See the [architecture guide](docs/architecture.md) and the [GitHub App reliability architecture](docs/github-app-reliability.md).
 
 ## ✅ Available now
 
@@ -90,16 +92,26 @@ The architecture keeps event parsing, decisions, and GitHub mutations separate s
 | `status: ready` ↔ `status: in-progress` lifecycle | ✅ Implemented |
 | Safe close-event cleanup | ✅ Implemented |
 | Configurable reminder / expiry policy | ✅ Implemented |
+| Scheduled stale-assignment reminders | ✅ Implemented — reminder-only |
+| Contributor active-work limits | ✅ Implemented |
 | Idempotency helpers + operation receipts | ✅ Implemented |
 | Linked pull-request detection | ✅ Implemented |
+| Post-merge contributor acknowledgement/follow-up | ✅ Implemented |
+| Completed-contribution history projection | ✅ Implemented — in-process projection, not persistent analytics |
+| Pull-request review/author timing helper | ✅ Implemented — foundation only; review queue/classifier remain roadmap |
+| Versioned operational event contract | ✅ Implemented — persistent event storage/audit emission remain roadmap |
 | Strict `.repoops.yml` validation | ✅ Implemented |
 | Event fixtures + local simulation | ✅ Implemented |
 | GitHub Pages product site + contributor hub | ✅ Implemented |
-| Scheduled stale-assignment reminders | ✅ Implemented — reminder-only |
-| Contributor work limits / PR attention / event history | 🗺️ Roadmap |
+| AI-assisted contributor contract (`AGENTS.md`) | ✅ Implemented |
+| Webhook delivery dedup + API retry/rate-limit primitives | ✅ Implemented — GitHub App reliability foundation only |
+| Maintainer PR attention queue / hosted GitHub App / multi-repository control plane | 🗺️ Roadmap |
 
 > [!IMPORTANT]
 > RepoOps currently defaults to **non-destructive assignment behavior**. `autoRelease` is `false`; automatic destructive release is not part of the current workflow.
+
+> [!NOTE]
+> RepoOps does **not** yet ship an installable hosted GitHub App or reusable GitHub Action for unrelated repositories. The App reliability primitives are groundwork for that future control plane, not an installation surface today.
 
 ### Commands
 
@@ -127,6 +139,10 @@ assignments:
   reminderAfterDays: 3
   expireAfterDays: 7
   autoRelease: false
+
+contributorLimits:
+  maxActiveAssignments: 2
+  limitMaintainers: false
 ```
 
 Unknown sections, unknown keys, unsafe values, and contradictory lifecycle policy are rejected rather than silently ignored. See [docs/configuration.md](docs/configuration.md).
@@ -150,11 +166,13 @@ find ready work → /claim → focused branch → npm run check → PR → revie
 ```
 
 1. Read [CONTRIBUTING.md](CONTRIBUTING.md) and the [development guide](docs/development.md).
-2. Open the [Contributor Hub](https://godtech-ctl-create.github.io/RepoOps/contribute.html).
-3. Choose an open, unassigned issue carrying `status: ready`.
-4. Comment `/claim` on GitHub.
-5. Implement only the issue scope and run `npm run check`.
-6. Open a focused pull request with validation evidence.
+2. If you use an AI coding assistant or agent, also read [AGENTS.md](AGENTS.md); the human/operator remains accountable for the submitted change.
+3. Open the [Contributor Hub](https://godtech-ctl-create.github.io/RepoOps/contribute.html).
+4. Choose an open, unassigned issue carrying `status: ready`.
+5. Comment `/claim` on GitHub and wait for RepoOps to confirm ownership before starting substantial work.
+6. Implement only the issue scope and run `npm run check`.
+7. Review the actual diff, then open a focused pull request with validation evidence.
+8. Let required checks and protected-branch rules run normally; do not bypass them because you are a maintainer or used an AI agent.
 
 Do not start substantial work on blocked or already-claimed issues unless a maintainer explicitly coordinates it.
 
@@ -183,7 +201,7 @@ The runtime currently has no third-party dependencies.
 - **Human control for consequential decisions** — automation coordinates work without silently making destructive choices.
 - **Least privilege** — workflows request only the permissions they need.
 - **Deterministic core logic** — decisions are independently testable.
-- **Safe retries** — repeated GitHub deliveries should not repeat successful operations.
+- **Safe retries and reconciliation** — repeated/delayed GitHub deliveries should not repeat successful operations or blindly replay ambiguous writes.
 - **Configuration before hard-coding** — repository policy is explicit.
 - **Untrusted input stays untrusted** — contributor-controlled text is never executable control data.
 - **GitHub remains authoritative** — RepoOps adds an operations layer instead of creating a competing issue/PR system.
@@ -201,16 +219,18 @@ Issue triage
       ↓
 Operational history + repository health
       ↓
-Reusable GitHub Action
+Reusable GitHub Action / team-installable distribution
       ↓
 GitHub App + multi-repository control plane
       ↓
 Dashboard and analytics
 ```
 
+The immediate distribution goal is to make RepoOps usable outside its own repository without copying RepoOps source into every consumer repository. The hosted GitHub App comes after that reusable distribution layer and will keep GitHub as the primary contributor/maintainer workspace.
+
 RepoOps is **pre-1.0**. Package version: **0.2.0**. No official GitHub Release has been published yet.
 
-See the [product roadmap](docs/roadmap.md), [issue taxonomy](docs/issue-taxonomy.md), [release policy](docs/releases.md), and [changelog](CHANGELOG.md).
+See the [product roadmap](docs/roadmap.md), [GitHub App reliability architecture](docs/github-app-reliability.md), [issue taxonomy](docs/issue-taxonomy.md), [release policy](docs/releases.md), and [changelog](CHANGELOG.md).
 
 ## Assignment safety and reminders
 
