@@ -4,7 +4,7 @@ RepoOps automates repository state and may operate with GitHub write permissions
 
 ## Reporting a vulnerability
 
-Do not open a public issue for a vulnerability that could enable unauthorized repository changes, token exposure, command abuse, privilege escalation, workflow injection, or other security impact.
+Do not open a public issue for a vulnerability that could enable unauthorized repository changes, token exposure, command abuse, privilege escalation, workflow injection, database disclosure, webhook-payload disclosure, or other security impact.
 
 Instead, use GitHub's private vulnerability reporting for this repository when available. Include:
 - affected component or workflow
@@ -24,6 +24,8 @@ Security-sensitive areas include:
 - command parsing and authorization
 - webhook validation
 - repository mutation logic
+- hosted PostgreSQL credentials and persistence
+- authenticated webhook payload storage/retention
 - dependency and release automation
 - event logging that may contain sensitive metadata
 
@@ -37,6 +39,8 @@ RepoOps aims to follow these rules:
 - deterministic tests for policy decisions
 - safe retries and idempotent operations where possible
 - no secrets committed to the repository
+- secret-bearing configuration stays out of normal diagnostics/public config
+- raw private-repository webhook payloads are operational data, not logs or public analytics
 
 ## GitHub App webhook verification
 
@@ -50,9 +54,10 @@ The required ingress order is:
 receive raw request
   -> verify X-Hub-Signature-256
   -> reject unauthenticated/malformed request
-  -> parse trusted envelope/payload
-  -> register delivery in the durable inbox
-  -> enqueue accepted work
+  -> parse authenticated envelope/payload
+  -> persist delivery + payload in the durable inbox
+  -> acknowledge durable acceptance
+  -> queue accepted work
 ```
 
 Do not parse and re-serialize JSON before signature verification. Do not add a production path that bypasses webhook verification. The webhook secret must be supplied securely by the hosted runtime and must never be committed, logged, included in errors, or written into GitHub comments.
@@ -60,6 +65,24 @@ Do not parse and re-serialize JSON before signature verification. Do not add a p
 Delivery GUID validation/deduplication is a separate reliability control; it does not authenticate the sender.
 
 See `docs/github-app-reliability.md` for the broader webhook, retry, reconciliation, and outage model.
+
+## Hosted PostgreSQL security
+
+The durable webhook inbox can contain issue/comment text and private-repository content. Treat the database and its authenticated payload bytes as sensitive hosted application data.
+
+Rules:
+
+- database credentials are supplied through the dedicated PostgreSQL configuration boundary (`REPOOPS_DATABASE_URL` or supported deployment secret injection);
+- database URLs/passwords must never be printed, returned from health endpoints, copied into general runtime config objects, or included in GitHub comments;
+- adapter errors expose only bounded operation names and safe SQLSTATE values, not raw query/connection error messages;
+- raw authenticated webhook bytes are never normal retry/dead-letter log fields;
+- processing reads verify payload digest and length before returning bytes;
+- private-repository payloads must remain scoped to their installation/repository and must not enter public dashboards or contribution views;
+- terminal raw payload retention must be bounded; long-lived audit/event history should use normalized facts instead;
+- production PostgreSQL should use encrypted transport/storage and least-privilege database credentials appropriate to the deployment environment;
+- integration tests must use disposable test databases and test-only credentials.
+
+SQL migrations are checksum tracked. Do not edit migration history after it has been applied; use a new migration so schema review remains auditable.
 
 ## Supported versions
 

@@ -1,8 +1,8 @@
 # Webhook inbox processing contract
 
-RepoOps' hosted GitHub App must durably accept authenticated webhook deliveries before asynchronous repository work begins. This document defines the storage-agnostic inbox record and the contract a future PostgreSQL adapter must implement.
+RepoOps' hosted GitHub App must durably accept authenticated webhook deliveries before asynchronous repository work begins. `src/core/webhook-inbox.mjs` defines the storage-agnostic state contract; `src/control-plane/postgres/webhook-inbox-store.mjs` provides the PostgreSQL adapter for that contract.
 
-The current implementation lives in `src/core/webhook-inbox.mjs`. It does **not** deploy a database or queue.
+The PostgreSQL adapter persists accepted work, but no production webhook route or worker consumes it yet.
 
 ## Reliability boundary
 
@@ -40,7 +40,7 @@ Version 1 records contain:
 - `createdAt` / `updatedAt` — monotonic UTC timestamps.
 - `version` — monotonically increasing record version used by compare-and-swap persistence.
 
-The core record intentionally does **not** contain the raw webhook payload. The future storage adapter must atomically persist the authenticated payload under the same inbox identity (or an equivalent durable payload reference) and verify it against `payload.sha256` before processing.
+The core record intentionally does **not** contain the raw webhook payload. PostgreSQL stores the authenticated bytes alongside the record so accepted work can resume after process failure, and processing-facing reads verify those bytes against `payload.sha256` and `payload.byteLength`.
 
 ## States
 
@@ -87,7 +87,7 @@ Claiming:
 - creates a bounded worker lease;
 - increments the record version.
 
-The storage adapter must use compare-and-swap on the record version so two workers cannot both successfully claim the same version of a record.
+The PostgreSQL adapter uses compare-and-swap on the record version so two workers cannot both successfully advance the same persisted version.
 
 A worker must not finalize a record after its lease has expired. Expired work belongs to the recovery path and requires reconciliation.
 
@@ -103,34 +103,61 @@ A worker must not finalize a record after its lease has expired. Expired work be
 - `listAbandonedProcessing(now, limit)` — return `PROCESSING` records with expired leases.
 - `listDeadLetter(limit)` — operator-visible terminal failures.
 
-An implementation may expose additional methods, but these semantics must remain atomic.
+The PostgreSQL implementation additionally exposes:
 
-## PostgreSQL persistence requirements
+- `readWithPayload(id)` — return a record plus verified authenticated payload bytes;
+- `listForRepository({ installationId, repositoryId, limit })` — scoped history for future installation/repository operations.
 
-A future PostgreSQL implementation should persist/index at minimum:
+## PostgreSQL implementation
 
-- primary key: `id`;
-- unique delivery GUID;
-- installation ID and repository ID;
-- event/action;
-- state;
-- attempt count;
-- record version;
-- received/created/updated timestamps;
-- retry time;
-- lease expiry;
-- bounded reason category;
-- payload SHA-256 and byte length;
-- encrypted or otherwise appropriately protected authenticated payload content/reference.
+Migration `db/migrations/001_webhook_inbox.sql` creates `repoops_webhook_inbox` with:
 
-Recommended indexes include:
+- primary key `id`;
+- unique GitHub delivery GUID;
+- installation/repository/event/action identity;
+- state, attempt and version fields;
+- retry and lease timestamps;
+- payload digest/length and payload bytes;
+- database constraints mirroring important processing/retry/reason shape invariants.
 
-- `(state, next_attempt_at)` for retry-due scans;
-- `(state, lease_expires_at)` for abandoned-processing recovery;
-- `(state, updated_at)` for reconciliation/dead-letter/operator views;
-- `(installation_id, repository_id, created_at)` for scoped operations and retention.
+Indexes support:
 
-Insert-if-absent must use a database uniqueness guarantee. Read-before-write by itself is not sufficient.
+- retry-due scans by state and `next_attempt_at`;
+- abandoned-processing scans by lease expiry;
+- reconciliation/dead-letter scans by state and update time;
+- installation/repository scoped history.
+
+Insert-if-absent uses PostgreSQL uniqueness and `ON CONFLICT DO NOTHING`; read-before-write is not used as the concurrency guarantee. A duplicate with the same acceptance facts returns the persisted record. Conflicting metadata or payload integrity under the same identity fails closed and never replaces the stored payload.
+
+Compare-and-swap updates only mutable processing fields. Its `WHERE` clause requires:
+
+- inbox ID;
+- expected version;
+- immutable delivery identity;
+- installation/repository/event/action values;
+- payload digest/length;
+- receipt/creation timestamps.
+
+If another worker already advanced the version, callers receive the current persisted record as a conflict rather than overwriting it.
+
+## Migrations
+
+Run migrations with:
+
+```bash
+REPOOPS_DATABASE_URL=postgresql://user:password@localhost:5432/repoops \
+npm run db:migrate
+```
+
+`src/control-plane/postgres/migrations.mjs`:
+
+- tracks applied version/name/checksum in `repoops_schema_migrations`;
+- serializes migration application with a PostgreSQL advisory transaction lock;
+- validates filename/version ordering;
+- refuses edited migration history when the stored checksum differs;
+- applies outstanding migrations transactionally.
+
+Migration files that have reached an environment are immutable. Add a new numbered migration for schema evolution.
 
 ## Payload retention and privacy
 
@@ -142,8 +169,10 @@ The hosted adapter must:
 - never copy webhook secrets, authorization headers, installation tokens or private keys into the inbox;
 - never log raw payloads as normal retry/dead-letter diagnostics;
 - verify stored payload bytes against the record digest before processing;
-- define a bounded retention period for terminal payloads;
+- use bounded retention for terminal payloads;
 - prevent private-repository payloads from appearing in public dashboards, GitHub issues or contributor projections.
+
+The schema permits payload bytes to be removed only after a record reaches a terminal state. The retention cleanup job itself is a later operational milestone.
 
 Long-lived audit/event history should store normalized operational facts, not indefinite copies of raw webhook bodies.
 
@@ -156,7 +185,28 @@ Long-lived audit/event history should store normalized operational facts, not in
 - `abandoned-processing`;
 - `dead-letter`.
 
-The persistent adapter should make each class queryable without scanning the full inbox table.
+The PostgreSQL store makes each class queryable using bounded, deterministic ordering without scanning the full inbox table.
+
+## Integration testing
+
+CI starts PostgreSQL 16 and supplies `REPOOPS_TEST_DATABASE_URL`. The integration suite exercises:
+
+- repeatable migrations and migration history;
+- duplicate delivery convergence and conflict handling;
+- compare-and-swap success and stale-worker conflicts;
+- retry/reconciliation/abandoned/dead-letter recovery queries;
+- payload tamper detection;
+- installation/repository scoped reads;
+- database constraints independent of application validation.
+
+For local integration testing, set an explicit disposable test database URL and run:
+
+```bash
+REPOOPS_TEST_DATABASE_URL=postgresql://repoops:repoops@localhost:5432/repoops_test \
+npm run test:postgres
+```
+
+Tests can truncate the inbox table. Never point the integration suite at a production or shared environment.
 
 ## Relationship to other reliability layers
 

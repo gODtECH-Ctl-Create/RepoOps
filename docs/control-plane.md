@@ -2,23 +2,27 @@
 
 RepoOps has a hosted runtime boundary under `src/control-plane/` for the future GitHub App control plane. It is separate from the existing GitHub Actions entry point in `src/index.mjs`.
 
-The initial runtime deliberately contains no GitHub mutation logic, GitHub App credentials, webhook endpoint, queue, or database adapter. Its purpose is to provide a small process boundary that later hosted components can extend without moving repository policy into HTTP handlers.
+The hosted runtime currently provides process lifecycle, health/readiness, and a PostgreSQL persistence boundary for the durable webhook inbox. It still contains no GitHub App authentication, production webhook endpoint, worker execution, or repository mutations.
 
-## Current flow
+## Current hosted foundations
 
 ```text
 process start
     ↓
 validate runtime configuration
     ↓
-create HTTP service
-    ↓
-listen
+HTTP service
     ↓
 /healthz   /readyz
+
+PostgreSQL adapter
+    ↓
+versioned migrations
+    ↓
+durable webhook inbox records + authenticated payload bytes
 ```
 
-Future GitHub App work will extend the hosted side behind dedicated adapters:
+Future GitHub App work extends these boundaries behind dedicated adapters:
 
 ```text
 GitHub webhook
@@ -27,7 +31,7 @@ HTTP ingress
     ↓
 verified webhook envelope
     ↓
-persistent inbox
+PostgreSQL durable inbox
     ↓
 workers / reconciliation
     ↓
@@ -39,6 +43,7 @@ GitHub remains the source of truth for issues, pull requests, reviews, branches,
 ## Start locally
 
 ```bash
+npm install
 npm run start:control-plane
 ```
 
@@ -69,7 +74,79 @@ npm run start:control-plane
 
 Invalid configuration fails before the listener opens. Validation errors identify the field but do not echo the supplied value.
 
-GitHub private keys, installation tokens, webhook secrets, database URLs, and queue credentials are intentionally **not** part of this configuration yet. Each will be introduced only when the runtime component that consumes it exists.
+Database credentials are deliberately **not** added to this ordinary runtime config object.
+
+## PostgreSQL configuration
+
+PostgreSQL uses a separate secret-bearing configuration boundary:
+
+```bash
+REPOOPS_DATABASE_URL=postgresql://user:password@localhost:5432/repoops
+```
+
+`DATABASE_URL` is accepted as a fallback, while `REPOOPS_DATABASE_URL` takes precedence.
+
+The value must be a `postgres://` or `postgresql://` URL with a host and database name. Validation errors identify only the `databaseUrl` field; they never echo the supplied connection string.
+
+Do not log, serialize, return from health endpoints, or copy the database URL into the general control-plane runtime configuration.
+
+## Database migrations
+
+Apply versioned migrations explicitly:
+
+```bash
+REPOOPS_DATABASE_URL=postgresql://user:password@localhost:5432/repoops \
+npm run db:migrate
+```
+
+Migration files live under `db/migrations/` and use numeric prefixes such as:
+
+```text
+001_webhook_inbox.sql
+```
+
+The migration runner:
+
+- records applied versions and SHA-256 checksums in `repoops_schema_migrations`;
+- takes a PostgreSQL advisory transaction lock so concurrent startup/deploy jobs cannot independently apply migration history;
+- refuses to accept an already-applied migration whose name or checksum changed;
+- applies each outstanding migration transactionally;
+- can be run repeatedly when no migration is pending.
+
+Applied migration files are immutable history. Add a new migration rather than editing a migration already used by an environment.
+
+## Webhook inbox persistence
+
+`src/control-plane/postgres/webhook-inbox-store.mjs` implements the storage contract from `src/core/webhook-inbox.mjs`.
+
+The adapter persists:
+
+- stable RepoOps delivery identity and unique GitHub delivery GUID;
+- installation/repository/event/action metadata;
+- inbox state, attempt count, reason, version and timestamps;
+- retry and worker-lease fields;
+- payload SHA-256 and byte length;
+- exact authenticated webhook payload bytes required to resume accepted work.
+
+Important guarantees:
+
+- record + payload insert is one PostgreSQL statement and therefore atomic;
+- duplicate delivery acceptance uses database uniqueness and does not replace existing payload bytes;
+- conflicting reuse of an inbox/delivery identity fails closed;
+- compare-and-swap updates require the persisted record version and immutable delivery facts to match;
+- stale workers receive a conflict rather than overwriting a newer record;
+- recovery queries are indexed and deterministically ordered;
+- processing reads verify stored payload byte length and SHA-256 before returning bytes to callers.
+
+Raw webhook payloads are operational input, not normal diagnostics. They must not be emitted in application logs, errors, public dashboards, GitHub comments, or contributor projections.
+
+Terminal payload bytes may be removed later according to the retention policy; normalized long-lived audit/event data should not depend on keeping raw webhook bodies indefinitely.
+
+## PostgreSQL readiness
+
+`createPostgresReadinessCheck(pool)` provides a minimal `SELECT 1` readiness function that can be injected into the existing `/readyz` dependency checks.
+
+The current executable control-plane entry point does **not** automatically require PostgreSQL yet because no hosted webhook/worker route consumes it. The webhook-ingress composition milestone should make PostgreSQL readiness mandatory at the same time it makes durable acceptance part of request handling.
 
 ## Health endpoints
 
@@ -97,7 +174,7 @@ A failed dependency check or a runtime entering shutdown returns HTTP `503`:
 {"status":"not-ready"}
 ```
 
-Readiness checks are injected functions. This lets future PostgreSQL, queue, or other required dependency checks participate without putting those dependencies directly into the HTTP layer. A readiness-check error is not returned to the caller.
+Readiness checks are injected functions. PostgreSQL, queue, or other required dependency checks can participate without putting those implementations directly into the HTTP layer. A readiness-check error is not returned to the caller.
 
 `POST` or other non-GET methods on health endpoints return `405`. Unknown routes return a small JSON `404` response.
 
@@ -128,20 +205,21 @@ Future workers must join this lifecycle before they are introduced: stop leasing
 ## Security and reliability boundaries
 
 - The hosted runtime does not broaden any GitHub workflow or App permission.
-- Health endpoints do not expose environment variables, dependency errors, secrets, tokens, or raw webhook payloads.
-- Runtime configuration errors do not echo supplied values.
-- Repository policy stays outside HTTP transport code.
+- Health endpoints do not expose environment variables, dependency errors, secrets, tokens, database URLs, or raw webhook payloads.
+- Runtime/database configuration errors do not echo supplied secret values.
+- Repository policy stays outside HTTP and database adapter code.
 - Webhook receipt, durable acceptance, mutation execution, retry, and reconciliation remain separate concerns.
+- PostgreSQL persistence implements the existing core state contract rather than defining a second state machine.
 - The GitHub Actions path continues to operate independently until an explicit migration milestone changes that behavior.
 
-## Not implemented by this runtime milestone
+## Not implemented yet
 
-- PostgreSQL schema/adapter or migrations
 - GitHub App JWT and installation-token lifecycle
-- webhook HTTP ingress
+- production webhook HTTP ingress
 - durable queue/workers
 - retry/redelivery/reconciliation workers
 - repository mutations from the hosted runtime
 - installation UI or dashboard
+- production PostgreSQL provisioning/backups
 
-Those are follow-up control-plane milestones and should consume this process boundary rather than expanding the health server into a monolithic application.
+Those are follow-up control-plane milestones and should consume these process and persistence boundaries rather than expanding the HTTP server or database adapter into a monolithic application.
