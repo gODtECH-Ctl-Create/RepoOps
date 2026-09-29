@@ -51,11 +51,8 @@ jobs:
           TAG="v${VERSION}"
 
           if gh release view "${TAG}" >/dev/null 2>&1; then
-            echo "::error::Release ${TAG} already exists."
-            exit 1
-          fi
-
-          if [[ "${PRERELEASE}" == "true" ]]; then
+            echo "Release ${TAG} already exists; continuing with stable channel update."
+          elif [[ "${PRERELEASE}" == "true" ]]; then
             gh release create "${TAG}" \
               --target MASTER \
               --title "RepoOps ${TAG}" \
@@ -71,6 +68,7 @@ jobs:
       - name: Move stable major channel
         if: inputs.prerelease == false
         env:
+          GH_TOKEN: ${{ github.token }}
           VERSION: ${{ inputs.version }}
         shell: bash
         run: |
@@ -78,10 +76,48 @@ jobs:
 
           TAG="v${VERSION}"
           MAJOR="v${VERSION%%.*}"
+          REPOSITORY="${GITHUB_REPOSITORY}"
 
-          git fetch --tags --force
+          TARGET_SHA="$(gh api \
+            "repos/${REPOSITORY}/git/ref/tags/${TAG}" \
+            --jq '.object.sha')"
 
-          git tag -fa "${MAJOR}" "${TAG}" -m "RepoOps ${MAJOR} channel -> ${TAG}"
-          git push origin "refs/tags/${MAJOR}" --force
+          TARGET_TYPE="$(gh api \
+            "repos/${REPOSITORY}/git/ref/tags/${TAG}" \
+            --jq '.object.type')"
 
-          echo "Stable channel ${MAJOR} now points to ${TAG}."
+          # GitHub releases may create an annotated tag object. Resolve it to
+          # the underlying commit so the moving major channel points directly
+          # at the released source commit.
+          if [[ "${TARGET_TYPE}" == "tag" ]]; then
+            TARGET_SHA="$(gh api \
+              "repos/${REPOSITORY}/git/tags/${TARGET_SHA}" \
+              --jq '.object.sha')"
+          fi
+
+          if gh api \
+            "repos/${REPOSITORY}/git/ref/tags/${MAJOR}" \
+            >/dev/null 2>&1; then
+            gh api \
+              --method PATCH \
+              "repos/${REPOSITORY}/git/refs/tags/${MAJOR}" \
+              -f sha="${TARGET_SHA}" \
+              -F force=true
+          else
+            gh api \
+              --method POST \
+              "repos/${REPOSITORY}/git/refs" \
+              -f ref="refs/tags/${MAJOR}" \
+              -f sha="${TARGET_SHA}"
+          fi
+
+          VERIFIED_SHA="$(gh api \
+            "repos/${REPOSITORY}/git/ref/tags/${MAJOR}" \
+            --jq '.object.sha')"
+
+          if [[ "${VERIFIED_SHA}" != "${TARGET_SHA}" ]]; then
+            echo "::error::Stable channel ${MAJOR} did not resolve to the released commit."
+            exit 1
+          fi
+
+          echo "Stable channel ${MAJOR} now points to ${TAG} (${TARGET_SHA})."
