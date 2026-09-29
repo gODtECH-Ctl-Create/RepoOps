@@ -155,13 +155,15 @@ Implemented foundations:
 - PostgreSQL migration runner with checksum-protected history and serialized migration application
 - PostgreSQL durable webhook inbox persistence with atomic record+payload acceptance, uniqueness, compare-and-swap, indexed recovery queries, and payload-integrity verification
 - PostgreSQL-backed CI integration coverage for migrations, duplicate deliveries, stale writers, recovery scans, payload tampering, constraints, and installation/repository scoping
+- GitHub App RS256 identity/JWT generation with isolated private-key configuration
+- installation-token minting with deterministic repository/permission scopes, refresh-window caching, single-flight concurrency, safe failure metadata, and invalidation protection for suspension/uninstall races
 - documented GitHub App reliability contract for deduplication, retries, outages, reconciliation, and dead-letter behavior
 
-See [GitHub App reliability architecture](github-app-reliability.md), [webhook inbox processing](webhook-inbox.md), and [hosted control plane](control-plane.md).
+See [GitHub App reliability architecture](github-app-reliability.md), [webhook inbox processing](webhook-inbox.md), [GitHub App authentication](github-app-auth.md), and [hosted control plane](control-plane.md).
 
 Still required for the hosted control plane:
 
-- GitHub App authentication and installation-token lifecycle
+- register/configure the actual RepoOps GitHub App and deployment secrets
 - production webhook HTTP endpoint wired to verified ingress and PostgreSQL durable acceptance
 - durable job queue and workers
 - persistent retry scheduler
@@ -169,14 +171,14 @@ Still required for the hosted control plane:
 - reconciliation workers
 - dead-letter/operator tooling and retention cleanup
 - persistent operational event store
-- installation-scoped permission/access handling
+- installation lifecycle persistence and installation-scoped permission/access handling
 - organization/repository onboarding and readiness validation
 - multi-repository policy management
 - organization-level maintainer queue
 
 The foundations above do **not** mean a hosted/installable GitHub App exists yet. GitHub Actions remains the current repository-mutation runtime until an explicit App cutover milestone moves selected operations to hosted workers.
 
-The next critical-path milestone after PostgreSQL persistence is GitHub App identity/authentication and installation-token lifecycle, followed by the production webhook endpoint that durably accepts authenticated deliveries.
+The next critical-path milestone after App authentication is the production webhook endpoint that verifies, normalizes, and durably accepts authenticated deliveries before acknowledging GitHub.
 
 ## Stage 7 — Dashboard and analytics
 
