@@ -34,6 +34,13 @@ const OUTCOMES = new Set([
   ...TERMINAL_STATES
 ]);
 
+const STATES_REQUIRING_REASON = new Set([
+  WEBHOOK_INBOX_STATES.RETRY_WAIT,
+  WEBHOOK_INBOX_STATES.RECONCILE_REQUIRED,
+  WEBHOOK_INBOX_STATES.FAILED_PERMANENT,
+  WEBHOOK_INBOX_STATES.DEAD_LETTER
+]);
+
 const sha256Pattern = /^[a-f0-9]{64}$/;
 const workerPattern = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 const reasonPattern = /^[A-Za-z0-9][A-Za-z0-9._:/ -]{0,255}$/;
@@ -163,6 +170,7 @@ export function validateWebhookInboxRecord(input) {
     requireField(lease !== null, "lease");
     requireField(["normal", "reconcile"].includes(input.processingMode), "processingMode");
     requireField(input.attemptCount > 0, "attemptCount");
+    requireField(lease.acquiredAt === updatedAt, "lease.acquiredAt");
   } else {
     requireField(lease === null, "lease");
     requireField(input.processingMode === null, "processingMode");
@@ -170,16 +178,13 @@ export function validateWebhookInboxRecord(input) {
 
   if (input.state === WEBHOOK_INBOX_STATES.RETRY_WAIT) {
     requireField(nextAttemptAt !== null, "nextAttemptAt");
-    validateReason(reason, true);
+    requireField(Date.parse(nextAttemptAt) > Date.parse(updatedAt), "nextAttemptAt");
   } else {
     requireField(nextAttemptAt === null, "nextAttemptAt");
   }
 
-  if ([
-    WEBHOOK_INBOX_STATES.RECONCILE_REQUIRED,
-    WEBHOOK_INBOX_STATES.FAILED_PERMANENT,
-    WEBHOOK_INBOX_STATES.DEAD_LETTER
-  ].includes(input.state)) validateReason(reason, true);
+  if (STATES_REQUIRING_REASON.has(input.state)) validateReason(reason, true);
+  else requireField(reason === null, "reason");
 
   return freezeRecord({
     schemaVersion: 1,
@@ -244,12 +249,8 @@ export function finishWebhookInboxRecord(input, { outcome, now, reason = null, n
   }
 
   const timestamp = normalizeTimestamp(now, "now");
-  const needsReason = [
-    WEBHOOK_INBOX_STATES.RETRY_WAIT,
-    WEBHOOK_INBOX_STATES.RECONCILE_REQUIRED,
-    WEBHOOK_INBOX_STATES.FAILED_PERMANENT,
-    WEBHOOK_INBOX_STATES.DEAD_LETTER
-  ].includes(outcome);
+  requireField(Date.parse(timestamp) < Date.parse(record.lease.expiresAt), "lease.expired");
+  const needsReason = STATES_REQUIRING_REASON.has(outcome);
   const normalizedReason = validateReason(reason, needsReason);
 
   let normalizedNextAttempt = null;
@@ -290,6 +291,7 @@ export function recoverAbandonedWebhookInboxRecord(input, { now, reason = "worke
 export function classifyWebhookInboxRecovery(input, { now }) {
   const record = validateWebhookInboxRecord(input);
   const timestamp = normalizeTimestamp(now, "now");
+  requireField(Date.parse(timestamp) >= Date.parse(record.updatedAt), "now");
 
   if (record.state === WEBHOOK_INBOX_STATES.RETRY_WAIT && Date.parse(timestamp) >= Date.parse(record.nextAttemptAt)) {
     return WEBHOOK_INBOX_RECOVERY.RETRY_DUE;
