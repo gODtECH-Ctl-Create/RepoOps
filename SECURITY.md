@@ -20,7 +20,7 @@ If private reporting is unavailable, contact the repository owner privately befo
 Security-sensitive areas include:
 - GitHub Actions workflows and permissions
 - `GITHUB_TOKEN` usage
-- GitHub App authentication and installation tokens
+- GitHub App private keys, JWTs, authentication, and installation tokens
 - command parsing and authorization
 - webhook validation
 - repository mutation logic
@@ -41,6 +41,27 @@ RepoOps aims to follow these rules:
 - no secrets committed to the repository
 - secret-bearing configuration stays out of normal diagnostics/public config
 - raw private-repository webhook payloads are operational data, not logs or public analytics
+
+## GitHub App credential security
+
+GitHub App identity and installation credentials live behind `src/control-plane/github-app/`.
+
+Rules:
+
+- `REPOOPS_GITHUB_APP_PRIVATE_KEY` and installation access tokens are secrets and must never be logged, serialized, persisted to PostgreSQL, emitted by health endpoints, or copied into GitHub comments;
+- the App private key is parsed into a Node `KeyObject` and ordinary callers should not retain the raw PEM text;
+- App JWTs are short-lived RS256 credentials and must be treated like secrets even though they expire quickly;
+- installation access tokens are opaque values; do not depend on token prefix, shape, or length for authorization decisions;
+- installation tokens are cached only in process memory and are refreshed before their expiration safety window;
+- different repository/permission scopes must never share a cached credential;
+- suspension/uninstall handling must call the installation invalidation path before future hosted mutations are enabled;
+- invalidation uses a generation check so an already in-flight token mint cannot repopulate the cache after an installation becomes invalid;
+- token-mint failures expose only bounded status/request/rate-limit metadata; GitHub response bodies are not included in normal authentication errors;
+- retry/backoff policy belongs to the runtime reliability layer rather than the credential client itself.
+
+The hosted runtime still does not mutate repositories after the authentication milestone. Enabling hosted mutations requires an explicit worker/cutover milestone with installation-scoped permission review.
+
+See `docs/github-app-auth.md` for the authentication and cache contract.
 
 ## GitHub App webhook verification
 

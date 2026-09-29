@@ -1,6 +1,6 @@
 # RepoOps Architecture
 
-RepoOps is an event-driven repository operations toolkit. Repository automation currently runs inside GitHub Actions and uses GitHub as its source of truth. A separate hosted control-plane process boundary and PostgreSQL persistence adapter now exist for future GitHub App work, but the hosted runtime does not yet process production GitHub webhooks or mutate repositories.
+RepoOps is an event-driven repository operations toolkit. Repository automation currently runs inside GitHub Actions and uses GitHub as its source of truth. A separate hosted control-plane process boundary, PostgreSQL persistence adapter, and GitHub App authentication boundary now exist for future App work, but the hosted runtime does not yet process production GitHub webhooks or mutate repositories.
 
 ## Current request flow
 
@@ -36,11 +36,17 @@ src/control-plane/postgres/*
 PostgreSQL pool + migrations
     ↓
 durable webhook inbox adapter
+
+src/control-plane/github-app/*
+    ↓
+App private-key identity → RS256 JWT
+    ↓
+installation access token manager/cache
 ```
 
-The hosted process still has no production webhook route, GitHub App authentication, queue/worker execution, or repository mutation authority.
+The hosted process still has no production webhook route, queue/worker execution, or repository mutation authority.
 
-See [Hosted control plane](control-plane.md), [webhook inbox processing](webhook-inbox.md), and [GitHub App reliability architecture](github-app-reliability.md).
+See [Hosted control plane](control-plane.md), [GitHub App authentication](github-app-auth.md), [webhook inbox processing](webhook-inbox.md), and [GitHub App reliability architecture](github-app-reliability.md).
 
 ## Directory responsibilities
 
@@ -59,12 +65,24 @@ Core logic should avoid direct network/database calls. Where possible, it should
 ### `src/github/`
 Contains GitHub REST API interactions and repository mutations.
 
-This boundary lets tests exercise policy without requiring live API calls and gives us one place to add retries, rate-limit handling, observability, and future GitHub App authentication.
+This boundary lets tests exercise policy without requiring live API calls and gives us one place to add retries, rate-limit handling, observability, and installation-scoped callers.
 
 ### `src/control-plane/`
 Contains the hosted process/runtime boundary for the future GitHub App.
 
-It owns runtime configuration, HTTP lifecycle, liveness/readiness, graceful process shutdown, and hosted infrastructure adapters. Keep repository policy in `src/core`; GitHub API behavior belongs in `src/github`.
+It owns runtime configuration, HTTP lifecycle, liveness/readiness, graceful process shutdown, and hosted infrastructure/authentication adapters. Keep repository policy in `src/core`; GitHub repository behavior belongs in `src/github`.
+
+### `src/control-plane/github-app/`
+Contains GitHub App credential infrastructure:
+
+- secret-bearing App identity configuration;
+- RS256 App JWT generation;
+- installation-token minting;
+- deterministic repository/permission scope normalization;
+- process-local token cache, refresh-window handling, and single-flight acquisition;
+- installation invalidation that prevents stale in-flight mints from restoring credentials after suspension/uninstall.
+
+This layer does not decide repository policy and does not itself perform issue/PR mutations.
 
 ### `src/control-plane/postgres/`
 Contains PostgreSQL-specific hosted infrastructure:
@@ -89,20 +107,21 @@ The control plane must not silently become a second independent mutation engine 
 ### `test/`
 Contains deterministic unit tests and real integration tests where infrastructure semantics cannot be proven with mocks alone.
 
-PostgreSQL concurrency, migration, uniqueness, CAS, constraints, and recovery-query behavior are integration-tested against PostgreSQL in CI.
+PostgreSQL concurrency, migration, uniqueness, CAS, constraints, and recovery-query behavior are integration-tested against PostgreSQL in CI. GitHub App authentication uses generated RSA keys and controlled HTTP responses so no real App credentials are required for tests.
 
 ## Design rules
 
 1. **GitHub remains the source of truth initially.** RepoOps should not duplicate issue and PR state unless it needs operational history or derived state.
 2. **Decision logic should be testable without GitHub.** Core behavior should not depend on live API calls.
 3. **Persistence implements core contracts.** Databases must not become a second business-rule/state-transition layer.
-4. **Mutations must be auditable.** RepoOps should leave understandable comments, labels, logs, or events when it changes repository state.
-5. **Least privilege is mandatory.** Each workflow/App permission should request only what its job requires.
-6. **Avoid destructive surprises.** Closing, deleting, unassigning, merging, or otherwise destructive actions need explicit policy and safeguards.
-7. **Operations should tolerate retries.** GitHub Actions, webhooks, workers, and database operations can be retried; idempotency and CAS matter.
-8. **Configuration should replace repository-specific assumptions.** Future behavior should be controlled through validated RepoOps configuration.
-9. **One mutation authority per operation.** During migration, GitHub Actions and the hosted control plane must not independently execute the same logical repository operation.
-10. **Secret-bearing config stays isolated.** Database URLs, GitHub private keys, webhook secrets, and tokens must not enter normal diagnostics/public config objects.
+4. **Authentication is not authorization policy.** Possessing an installation token does not decide whether RepoOps should perform a repository mutation; core policy and explicit cutover rules still apply.
+5. **Mutations must be auditable.** RepoOps should leave understandable comments, labels, logs, or events when it changes repository state.
+6. **Least privilege is mandatory.** Each workflow/App permission and installation-token scope should request only what its operation requires.
+7. **Avoid destructive surprises.** Closing, deleting, unassigning, merging, or otherwise destructive actions need explicit policy and safeguards.
+8. **Operations should tolerate retries.** GitHub Actions, webhooks, workers, token requests, and database operations can be retried; idempotency and CAS matter.
+9. **Configuration should replace repository-specific assumptions.** Future behavior should be controlled through validated RepoOps configuration.
+10. **One mutation authority per operation.** During migration, GitHub Actions and the hosted control plane must not independently execute the same logical repository operation.
+11. **Secret-bearing config stays isolated.** Database URLs, GitHub private keys, webhook secrets, App JWTs, and installation tokens must not enter normal diagnostics/public config objects.
 
 ## Near-term architecture evolution
 
@@ -125,7 +144,7 @@ process/runtime → PostgreSQL → GitHub App auth → webhook ingress → queue
     → reconciliation/recovery → organization install flow → dashboard
 ```
 
-The process/runtime and PostgreSQL foundations now exist. The next hosted milestones are GitHub App identity/installation authentication and production webhook ingress wired to durable acceptance.
+The process/runtime, PostgreSQL persistence, and GitHub App authentication foundations now exist. The next hosted milestone is production webhook ingress wired to verified durable acceptance.
 
 The hosted GitHub App must preserve the same deterministic core while moving event receipt, durable delivery state, retry scheduling, and installation authentication into the control-plane runtime. See [GitHub App reliability architecture](github-app-reliability.md).
 
@@ -143,6 +162,8 @@ Never interpolate untrusted GitHub content into shell commands or dynamically ex
 
 Raw authenticated webhook payloads stored for recovery are operational data. They must not appear in normal logs, public dashboards, contributor projections, or GitHub comments.
 
+App private keys, JWTs, and installation access tokens are credentials. Installation tokens are opaque and process-local; token response bodies are not normal diagnostics.
+
 ## Idempotent operations
 
 `src/core/idempotency.mjs` orchestrates injected stores and mutation steps without calling GitHub. `src/github/operations.mjs` stores authenticated operation receipts and reconciles fresh issue state. See [idempotency and recovery](idempotency.md) for checkpoint semantics, ambiguous failures, and concurrency limits.
@@ -151,7 +172,7 @@ Raw authenticated webhook payloads stored for recovery are operational data. The
 
 `src/github/linked-pull-requests.mjs` collects explicit GitHub closing/manual PR relationships with cursor pagination. Its normalized read-only result is reusable by lifecycle policies and future PR queues. See [relationship rules](linked-pull-requests.md).
 
-## Webhook and API reliability foundations
+## Webhook, authentication and API reliability foundations
 
 `src/github/webhook-signature.mjs` verifies GitHub HMAC-SHA256 signatures against the exact raw webhook payload before parsing. `src/github/webhook-ingress.mjs` then normalizes authenticated repository-operation envelopes without treating contributor-controlled payload content as authorization data.
 
@@ -161,9 +182,11 @@ Raw authenticated webhook payloads stored for recovery are operational data. The
 
 `src/control-plane/postgres/webhook-inbox-store.mjs` implements that contract with PostgreSQL uniqueness, atomic record+payload insertion, versioned compare-and-swap, indexed recovery queries, scoped reads, and payload-integrity verification. `db/migrations/001_webhook_inbox.sql` adds compatible database constraints and indexes. See [webhook inbox processing](webhook-inbox.md).
 
+`src/control-plane/github-app/jwt.mjs` creates short-lived RS256 App JWTs. `src/control-plane/github-app/installation-token.mjs` exchanges them for installation access tokens with scope-aware caching, refresh protection, and invalidation semantics. See [GitHub App authentication](github-app-auth.md).
+
 `src/github/client.mjs` exposes bounded structured GitHub API failure metadata, while `src/github/retry.mjs` classifies retryable reads, rate limits, permanent failures, and ambiguous mutation outcomes. Mutation failures that may already have reached GitHub require reconciliation before another write.
 
-The future App still needs GitHub App authentication/installation tokens, a production webhook endpoint, queue/workers, retry scheduling, failed-delivery recovery, reconciliation workers, and operator/dead-letter tooling. See [GitHub App reliability architecture](github-app-reliability.md) for the complete reliability contract.
+The future App still needs a production webhook endpoint, queue/workers, retry scheduling, failed-delivery recovery, reconciliation workers, operator/dead-letter tooling, installation lifecycle persistence, and explicit mutation cutover. See [GitHub App reliability architecture](github-app-reliability.md) for the complete reliability contract.
 
 ## Scheduled reminders
 

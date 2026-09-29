@@ -2,7 +2,7 @@
 
 RepoOps has a hosted runtime boundary under `src/control-plane/` for the future GitHub App control plane. It is separate from the existing GitHub Actions entry point in `src/index.mjs`.
 
-The hosted runtime currently provides process lifecycle, health/readiness, and a PostgreSQL persistence boundary for the durable webhook inbox. It still contains no GitHub App authentication, production webhook endpoint, worker execution, or repository mutations.
+The hosted runtime currently provides process lifecycle, health/readiness, PostgreSQL persistence for the durable webhook inbox, and a dedicated GitHub App identity/installation-token boundary. It still contains no production webhook endpoint, worker execution, or repository mutations.
 
 ## Current hosted foundations
 
@@ -20,6 +20,12 @@ PostgreSQL adapter
 versioned migrations
     ↓
 durable webhook inbox records + authenticated payload bytes
+
+GitHub App identity
+    ↓
+RS256 App JWT
+    ↓
+installation-token manager/cache
 ```
 
 Future GitHub App work extends these boundaries behind dedicated adapters:
@@ -34,6 +40,8 @@ verified webhook envelope
 PostgreSQL durable inbox
     ↓
 workers / reconciliation
+    ↓
+installation-scoped GitHub token
     ↓
 existing RepoOps core + GitHub adapters
 ```
@@ -74,7 +82,36 @@ npm run start:control-plane
 
 Invalid configuration fails before the listener opens. Validation errors identify the field but do not echo the supplied value.
 
-Database credentials are deliberately **not** added to this ordinary runtime config object.
+Database credentials and GitHub App credentials are deliberately **not** added to this ordinary runtime config object.
+
+## GitHub App authentication configuration
+
+GitHub App identity uses a separate secret-bearing boundary:
+
+```text
+REPOOPS_GITHUB_APP_CLIENT_ID
+REPOOPS_GITHUB_APP_PRIVATE_KEY
+REPOOPS_GITHUB_API_BASE_URL   # optional, defaults to https://api.github.com
+```
+
+The private key must be RSA. It is parsed into a Node `KeyObject`; the raw PEM text is not part of public runtime configuration and must never be logged or persisted.
+
+The App JWT layer uses RS256, a 60-second issued-at skew, and a short expiration within GitHub's maximum. JWT generation is deterministic under an injected clock for tests.
+
+Installation tokens are minted through the GitHub App installation-token endpoint. The manager:
+
+- treats tokens as opaque strings;
+- supports reduced repository and permission scopes;
+- caches by exact normalized installation/scope;
+- refreshes before expiration instead of returning a nearly expired credential;
+- shares one in-flight mint per scope;
+- does not cache failed requests;
+- invalidates all credentials for an installation on demand;
+- prevents a mint already in flight from repopulating the cache after invalidation.
+
+Tokens/JWTs remain process-local credentials and are not stored in PostgreSQL.
+
+See [GitHub App authentication](github-app-auth.md).
 
 ## PostgreSQL configuration
 
@@ -204,22 +241,24 @@ Future workers must join this lifecycle before they are introduced: stop leasing
 
 ## Security and reliability boundaries
 
-- The hosted runtime does not broaden any GitHub workflow or App permission.
-- Health endpoints do not expose environment variables, dependency errors, secrets, tokens, database URLs, or raw webhook payloads.
-- Runtime/database configuration errors do not echo supplied secret values.
-- Repository policy stays outside HTTP and database adapter code.
-- Webhook receipt, durable acceptance, mutation execution, retry, and reconciliation remain separate concerns.
+- The hosted runtime does not broaden any GitHub workflow or App permission by merely possessing App credentials.
+- Health endpoints do not expose environment variables, dependency errors, secrets, tokens, database URLs, private keys, or raw webhook payloads.
+- Runtime/database/App configuration errors do not echo supplied secret values.
+- Repository policy stays outside HTTP, database, and credential adapter code.
+- App authentication produces installation credentials; it does not decide whether a repository mutation is authorized by RepoOps policy.
+- Webhook receipt, durable acceptance, credential acquisition, mutation execution, retry, and reconciliation remain separate concerns.
 - PostgreSQL persistence implements the existing core state contract rather than defining a second state machine.
 - The GitHub Actions path continues to operate independently until an explicit migration milestone changes that behavior.
 
 ## Not implemented yet
 
-- GitHub App JWT and installation-token lifecycle
+- registration/configuration of the real RepoOps GitHub App in GitHub
 - production webhook HTTP ingress
 - durable queue/workers
 - retry/redelivery/reconciliation workers
 - repository mutations from the hosted runtime
+- installation lifecycle persistence/onboarding
 - installation UI or dashboard
 - production PostgreSQL provisioning/backups
 
-Those are follow-up control-plane milestones and should consume these process and persistence boundaries rather than expanding the HTTP server or database adapter into a monolithic application.
+Those are follow-up control-plane milestones and should consume these process, persistence, and authentication boundaries rather than expanding the HTTP server, database adapter, or credential manager into a monolithic application.

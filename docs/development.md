@@ -46,9 +46,37 @@ REPOOPS_PORT=3000 \
 npm run start:control-plane
 ```
 
-The current service exposes only `GET /healthz` and `GET /readyz`. Do not place repository policy or GitHub mutations directly in HTTP handlers. PostgreSQL persistence lives behind its own adapter; future App authentication, webhook, and worker layers should use the same boundary pattern while preserving the deterministic core.
+The current service exposes only `GET /healthz` and `GET /readyz`. Do not place repository policy or GitHub mutations directly in HTTP handlers. PostgreSQL persistence and GitHub App authentication live behind dedicated adapters; future webhook and worker layers should use the same boundary pattern while preserving the deterministic core.
 
-See [Hosted control plane](control-plane.md) for configuration, health, shutdown, PostgreSQL, and architecture boundaries.
+See [Hosted control plane](control-plane.md) for configuration, health, shutdown, PostgreSQL, authentication, and architecture boundaries.
+
+## GitHub App authentication development
+
+The App identity boundary is under `src/control-plane/github-app/`.
+
+Secret inputs are:
+
+```text
+REPOOPS_GITHUB_APP_CLIENT_ID
+REPOOPS_GITHUB_APP_PRIVATE_KEY
+REPOOPS_GITHUB_API_BASE_URL   # optional
+```
+
+Do not commit real private keys or installation tokens. Unit tests generate ephemeral RSA keypairs and use controlled HTTP responses; they do not require live GitHub credentials.
+
+When changing authentication behavior:
+
+- keep JWT generation deterministic through an injected/fixed clock in tests;
+- verify RS256 signatures with the generated public key rather than only decoding claims;
+- treat installation tokens as opaque strings;
+- cover cache reuse and refresh-window behavior;
+- cover concurrent token acquisition so one scope produces one in-flight mint;
+- ensure different repository/permission scopes cannot share credentials;
+- cover installation invalidation, including invalidation while a mint is already in flight;
+- keep raw GitHub token-response bodies and secret material out of normal error messages;
+- do not add retry sleeps inside the token client; use the shared reliability layer for retry/backoff decisions.
+
+See [GitHub App authentication](github-app-auth.md) for the complete contract.
 
 ## PostgreSQL development
 
@@ -137,6 +165,8 @@ When editing `.github/workflows/`:
 ## Dependency policy
 
 RepoOps keeps runtime dependencies intentionally small. `pg` is the first hosted-runtime dependency because Node.js does not provide a PostgreSQL wire client and the control plane requires real durable storage.
+
+GitHub App JWT signing intentionally uses Node's built-in cryptography instead of adding an authentication/JWT dependency.
 
 Add another dependency only when it materially reduces complexity or risk and cannot reasonably be handled by Node.js, PostgreSQL, or the GitHub API directly.
 
