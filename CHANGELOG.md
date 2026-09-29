@@ -8,6 +8,8 @@ The format follows a Keep a Changelog-style categories and the project intends t
 
 ### Added
 
+- Hosted control-plane process skeleton with validated runtime configuration, dependency-injectable health/readiness checks, bounded graceful shutdown, and a separate entry point that leaves current GitHub Actions repository operations unchanged.
+
 - Independent post-merge acknowledgment on the merged pull request, with first-contributor recognition and duplicate-safe recovery when the detailed issue follow-up already exists.
 
 - Idempotent post-merge contributor follow-up with conservative first-contribution recognition, contributor resources, and deterministic next-work suggestions that respect readiness and active-work limits.

@@ -125,7 +125,7 @@ The current contribution history is an in-process projection, not a persistent a
 
 ## Stage 5 — Reusable distribution
 
-Goal: make RepoOps useful outside its own repository.
+Goal: make RepoOps useful outside its own repository through a lightweight repository-local distribution path.
 
 Planned capabilities:
 
@@ -137,26 +137,30 @@ Planned capabilities:
 - example repositories
 - policy presets
 
-This is the next distribution milestone required before RepoOps can be adopted cleanly by unrelated repositories without copying the project source into each repository.
+Reusable Actions remain valuable for self-managed or repository-local adoption, but they are now a parallel distribution track rather than a hard prerequisite for the hosted GitHub App. The hosted control-plane path can progress independently while preserving the same deterministic core and configuration contracts.
 
 ## Stage 6 — GitHub App control plane
 
 Goal: support organizations and multiple repositories safely.
 
-Implemented reliability foundations:
+Implemented foundations:
 
 - replay-safe GitHub webhook delivery identity/registration through an injected durable-store contract
 - structured GitHub API/network failures with bounded retry and rate-limit signals
 - mutation-aware failure classification that reconciles ambiguous writes instead of blindly replaying them
+- GitHub HMAC-SHA256 webhook signature verification against the exact raw payload
+- authenticated webhook envelope normalization for current RepoOps repository-operation events
+- versioned durable-inbox processing state, worker leases, retry/reconciliation states, recovery classes, and storage adapter contract
 - documented GitHub App reliability contract for deduplication, retries, outages, reconciliation, and dead-letter behavior
+- hosted control-plane process boundary with validated runtime configuration, health/readiness, and graceful shutdown
 
-See [GitHub App reliability architecture](github-app-reliability.md).
+See [GitHub App reliability architecture](github-app-reliability.md), [webhook inbox processing](webhook-inbox.md), and [hosted control plane](control-plane.md).
 
 Still required for the hosted control plane:
 
+- PostgreSQL schema/migrations and persistent inbox adapter
 - GitHub App authentication and installation-token lifecycle
-- webhook signature-verification endpoint
-- persistent webhook inbox
+- production webhook HTTP endpoint wired to verified ingress and durable acceptance
 - durable job queue and workers
 - persistent retry scheduler
 - failed-delivery redelivery/recovery worker
@@ -164,10 +168,11 @@ Still required for the hosted control plane:
 - dead-letter/operator tooling
 - persistent operational event store
 - installation-scoped permission/access handling
+- organization/repository onboarding and readiness validation
 - multi-repository policy management
 - organization-level maintainer queue
 
-The reliability primitives above do **not** mean a hosted/installable GitHub App exists yet. They are the safety foundation the hosted control plane will consume.
+The foundations above do **not** mean a hosted/installable GitHub App exists yet. GitHub Actions remains the current repository-mutation runtime until an explicit App cutover milestone moves selected operations to hosted workers.
 
 ## Stage 7 — Dashboard and analytics
 
