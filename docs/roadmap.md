@@ -13,7 +13,7 @@ Goals:
 - stable command dispatcher
 - validated `.repoops.yml`
 - deterministic event fixtures and local simulation
-- contribution, security, architecture, and development documentation
+- contribution, security, architecture, development, and AI-agent guidance
 - issue and pull-request templates
 - release and roadmap conventions
 - first maintainer-quality public backlog
@@ -21,6 +21,7 @@ Goals:
 Exit criteria:
 
 - contributors can understand the architecture without maintainer hand-holding
+- human and AI-assisted contributors have explicit repository safety/validation guidance
 - contributors can test changes without mutating live GitHub resources
 - security-sensitive code paths are clearly documented
 - work is broken into independently reviewable issues
@@ -36,13 +37,13 @@ Implemented foundations:
 - configurable reminder windows and non-destructive expiry policy
 - explicit linked-PR detection
 - scheduled stale-assignment reminders (no automatic release)
+- configurable contributor active-work limits with maintainer exemption policy
 
 Remaining capabilities:
 
 - `/keep` command
 - `/blocked` command and blocked reason
 - assignment expiry and safe release (separate future approval/policy)
-- contributor active-work limits
 - maintainer attention queue
 - lifecycle event audit entries
 
@@ -57,17 +58,24 @@ Success signals:
 
 Goal: explain why pull requests are not progressing and who needs to act next.
 
-Planned capabilities:
+Implemented foundations:
+
+- linked pull-request discovery from authoritative GitHub relationships
+- deterministic pull-request timing helper for review age, author wait age, and response-latency calculations
+- duplicate-safe post-merge contributor acknowledgement/follow-up using authoritative completion evidence
+
+Remaining capabilities:
 
 - PR state classifier: waiting for author, maintainer, CI, reviewer, or dependency
-- review-age tracking
 - stale PR detection
-- linked issue validation
+- linked issue validation beyond existing relationship discovery
 - requested-changes follow-up
 - CI status summarization
 - review queue generation
 - maintainer digest
 - configurable review SLAs
+
+The timing helper provides reusable measurements; it does **not** by itself implement PR classification, SLA enforcement, or the maintainer review queue.
 
 Success signals:
 
@@ -96,18 +104,24 @@ AI-assisted triage, when introduced, should remain advisory unless repository po
 
 Goal: provide a normalized operational history instead of repeatedly reconstructing state from GitHub APIs.
 
-Planned capabilities:
+Implemented foundations:
 
-- append-only RepoOps event model
+- versioned immutable RepoOps operational event contract with deterministic identities and replay-conflict validation
+- deterministic completed-contribution history projection from validated operational events and authoritative linked-PR evidence
+- conservative first/returning/unknown contributor classification for post-merge follow-up
+
+Remaining capabilities:
+
+- persistent append-only event storage and event emission from all mutation paths
 - issue and PR lifecycle timelines
-- automation audit trail
+- structured automation audit trail
 - response-time metrics
 - assignment completion metrics
 - review latency metrics
 - abandoned-work metrics
 - repository health reports
 
-GitHub remains the source of truth for GitHub resources. RepoOps stores operational state and derived events needed for automation, audit, and analytics.
+The current contribution history is an in-process projection, not a persistent analytics database. GitHub remains the source of truth for GitHub resources; RepoOps stores or derives only the operational state needed for automation, audit, and analytics.
 
 ## Stage 5 — Reusable distribution
 
@@ -123,21 +137,37 @@ Planned capabilities:
 - example repositories
 - policy presets
 
+This is the next distribution milestone required before RepoOps can be adopted cleanly by unrelated repositories without copying the project source into each repository.
+
 ## Stage 6 — GitHub App control plane
 
 Goal: support organizations and multiple repositories safely.
 
-Planned capabilities:
+Implemented reliability foundations:
 
-- GitHub App authentication
-- webhook ingestion
-- installation-scoped permissions
-- persistent event store
-- job queue and workers
-- retry/idempotency controls
-- rate-limit management
+- replay-safe GitHub webhook delivery identity/registration through an injected durable-store contract
+- structured GitHub API/network failures with bounded retry and rate-limit signals
+- mutation-aware failure classification that reconciles ambiguous writes instead of blindly replaying them
+- documented GitHub App reliability contract for deduplication, retries, outages, reconciliation, and dead-letter behavior
+
+See [GitHub App reliability architecture](github-app-reliability.md).
+
+Still required for the hosted control plane:
+
+- GitHub App authentication and installation-token lifecycle
+- webhook signature-verification endpoint
+- persistent webhook inbox
+- durable job queue and workers
+- persistent retry scheduler
+- failed-delivery redelivery/recovery worker
+- reconciliation workers
+- dead-letter/operator tooling
+- persistent operational event store
+- installation-scoped permission/access handling
 - multi-repository policy management
 - organization-level maintainer queue
+
+The reliability primitives above do **not** mean a hosted/installable GitHub App exists yet. They are the safety foundation the hosted control plane will consume.
 
 ## Stage 7 — Dashboard and analytics
 
@@ -152,6 +182,8 @@ Planned capabilities:
 - automation audit history
 - repository health trends
 - cross-repository search and filtering
+
+The dashboard is intended as an optional cross-repository control/visibility surface. GitHub remains the primary place where contributors and maintainers work with issues, pull requests, reviews, and CI.
 
 ## Product boundaries
 
