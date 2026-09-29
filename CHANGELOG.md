@@ -8,6 +8,8 @@ The format follows a Keep a Changelog-style categories and the project intends t
 
 ### Added
 
+- GitHub App identity/authentication foundation with RS256 App JWT generation, isolated private-key configuration, installation-token minting, deterministic scope-aware caching, refresh-window handling, concurrent single-flight acquisition, safe invalidation, and sanitized GitHub failure metadata.
+
 - PostgreSQL persistence for the hosted durable webhook inbox, including versioned/checksummed migrations, atomic delivery+payload acceptance, compare-and-swap state updates, indexed recovery queries, payload-integrity verification, scoped repository reads, and real PostgreSQL CI integration tests.
 
 - Hosted control-plane process skeleton with validated runtime configuration, dependency-injectable health/readiness checks, bounded graceful shutdown, and a separate entry point that leaves current GitHub Actions repository operations unchanged.
