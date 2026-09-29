@@ -145,27 +145,29 @@ Goal: support organizations and multiple repositories safely.
 
 Implemented foundations:
 
-- replay-safe GitHub webhook delivery identity/registration through an injected durable-store contract
+- replay-safe GitHub webhook delivery identity/registration through a durable-store contract
 - structured GitHub API/network failures with bounded retry and rate-limit signals
 - mutation-aware failure classification that reconciles ambiguous writes instead of blindly replaying them
 - GitHub HMAC-SHA256 webhook signature verification against the exact raw payload
 - authenticated webhook envelope normalization for current RepoOps repository-operation events
 - versioned durable-inbox processing state, worker leases, retry/reconciliation states, recovery classes, and storage adapter contract
-- documented GitHub App reliability contract for deduplication, retries, outages, reconciliation, and dead-letter behavior
 - hosted control-plane process boundary with validated runtime configuration, health/readiness, and graceful shutdown
+- PostgreSQL migration runner with checksum-protected history and serialized migration application
+- PostgreSQL durable webhook inbox persistence with atomic record+payload acceptance, uniqueness, compare-and-swap, indexed recovery queries, and payload-integrity verification
+- PostgreSQL-backed CI integration coverage for migrations, duplicate deliveries, stale writers, recovery scans, payload tampering, constraints, and installation/repository scoping
+- documented GitHub App reliability contract for deduplication, retries, outages, reconciliation, and dead-letter behavior
 
 See [GitHub App reliability architecture](github-app-reliability.md), [webhook inbox processing](webhook-inbox.md), and [hosted control plane](control-plane.md).
 
 Still required for the hosted control plane:
 
-- PostgreSQL schema/migrations and persistent inbox adapter
 - GitHub App authentication and installation-token lifecycle
-- production webhook HTTP endpoint wired to verified ingress and durable acceptance
+- production webhook HTTP endpoint wired to verified ingress and PostgreSQL durable acceptance
 - durable job queue and workers
 - persistent retry scheduler
 - failed-delivery redelivery/recovery worker
 - reconciliation workers
-- dead-letter/operator tooling
+- dead-letter/operator tooling and retention cleanup
 - persistent operational event store
 - installation-scoped permission/access handling
 - organization/repository onboarding and readiness validation
@@ -173,6 +175,8 @@ Still required for the hosted control plane:
 - organization-level maintainer queue
 
 The foundations above do **not** mean a hosted/installable GitHub App exists yet. GitHub Actions remains the current repository-mutation runtime until an explicit App cutover milestone moves selected operations to hosted workers.
+
+The next critical-path milestone after PostgreSQL persistence is GitHub App identity/authentication and installation-token lifecycle, followed by the production webhook endpoint that durably accepts authenticated deliveries.
 
 ## Stage 7 — Dashboard and analytics
 
