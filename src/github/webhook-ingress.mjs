@@ -30,6 +30,12 @@ function rawText(body) {
   throw new WebhookPayloadValidationError("rawBody");
 }
 
+function deepFreezeJson(value) {
+  if (value === null || typeof value !== "object" || Object.isFrozen(value)) return value;
+  for (const child of Object.values(value)) deepFreezeJson(child);
+  return Object.freeze(value);
+}
+
 function parsePayload(body) {
   let payload;
   try {
@@ -42,7 +48,7 @@ function parsePayload(body) {
   if (payload === null || typeof payload !== "object" || Array.isArray(payload)) {
     throw new WebhookPayloadValidationError("root");
   }
-  return payload;
+  return deepFreezeJson(payload);
 }
 
 function positiveId(value, field) {
@@ -63,6 +69,8 @@ function actionFor(payload) {
  * Signature verification intentionally occurs before UTF-8 decoding or JSON
  * parsing. Returned payload content remains untrusted contributor-controlled
  * data; authentication proves origin/integrity, not authorization or intent.
+ * The parsed authenticated payload is deeply frozen so later code cannot mutate
+ * it between verification and durable inbox persistence.
  *
  * This helper does not persist or enqueue work. A future durable inbox adapter
  * can atomically persist the returned delivery metadata and authenticated payload.
