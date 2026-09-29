@@ -19,9 +19,33 @@ npm run check
 ```bash
 npm test
 npm run check
+npm run start:control-plane
 ```
 
 `npm run check` is the minimum verification expected before opening a pull request.
+
+## Hosted control plane
+
+The hosted GitHub App runtime is separate from the existing GitHub Actions entry point.
+
+Start the current control-plane skeleton locally with:
+
+```bash
+npm run start:control-plane
+```
+
+By default it listens on `127.0.0.1:3000`. For a container-style local run:
+
+```bash
+REPOOPS_ENV=development \
+REPOOPS_HOST=0.0.0.0 \
+REPOOPS_PORT=3000 \
+npm run start:control-plane
+```
+
+The initial service exposes only `GET /healthz` and `GET /readyz`. Do not place repository policy or GitHub mutations directly in HTTP handlers. Future persistence, App authentication, webhook, and worker layers should be added behind explicit adapters while preserving the existing deterministic core.
+
+See [Hosted control plane](control-plane.md) for configuration, health, shutdown, and architecture boundaries.
 
 ## Working on an issue
 
