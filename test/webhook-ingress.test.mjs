@@ -53,6 +53,19 @@ test("normalizes an authenticated repository-operation webhook", () => {
   assert.equal(envelope.payload.comment.body, "/claim — ready ✅");
 });
 
+test("authenticated payload remains immutable after verification", () => {
+  const body = rawPayload();
+  const envelope = createVerifiedWebhookEnvelope(envelopeArgs(body));
+
+  assert.equal(Object.isFrozen(envelope), true);
+  assert.equal(Object.isFrozen(envelope.payload), true);
+  assert.equal(Object.isFrozen(envelope.payload.comment), true);
+  assert.throws(() => {
+    envelope.payload.comment.body = "tampered after verification";
+  }, TypeError);
+  assert.equal(envelope.payload.comment.body, "/claim — ready ✅");
+});
+
 test("invalid signature fails before malformed JSON is parsed", () => {
   const malformed = "{ definitely not JSON";
   assert.throws(
