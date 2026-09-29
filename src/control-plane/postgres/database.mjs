@@ -39,6 +39,9 @@ export function createPostgresPool({ env = process.env, PoolClass = Pool, max = 
   return new PoolClass({
     connectionString,
     max,
+    connectionTimeoutMillis: 2_000,
+    statement_timeout: 5_000,
+    query_timeout: 6_000,
     application_name: "repoops-control-plane"
   });
 }

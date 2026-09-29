@@ -31,9 +31,16 @@ function rawText(body) {
 }
 
 function deepFreezeJson(value) {
-  if (value === null || typeof value !== "object" || Object.isFrozen(value)) return value;
-  for (const child of Object.values(value)) deepFreezeJson(child);
-  return Object.freeze(value);
+  const pending = [value];
+  while (pending.length) {
+    const item = pending.pop();
+    if (item === null || typeof item !== "object" || Object.isFrozen(item)) continue;
+    for (const child of Object.values(item)) {
+      if (child !== null && typeof child === "object") pending.push(child);
+    }
+    Object.freeze(item);
+  }
+  return value;
 }
 
 function parsePayload(body) {

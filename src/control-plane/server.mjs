@@ -50,7 +50,7 @@ function requestPath(request) {
  * The server owns process-level health only. Future webhook/domain behavior must
  * be injected behind dedicated handlers instead of being implemented here.
  */
-export function createControlPlaneServer({ readinessChecks = [] } = {}) {
+export function createControlPlaneServer({ readinessChecks = [], webhookHandler = null } = {}) {
   const checks = validateReadinessChecks(readinessChecks);
   let shuttingDown = false;
   let closePromise = null;
@@ -59,6 +59,15 @@ export function createControlPlaneServer({ readinessChecks = [] } = {}) {
     const path = requestPath(request);
     if (path === null) {
       sendJson(response, 400, { error: "bad-request" });
+      return;
+    }
+
+    if (path === "/webhooks/github" && webhookHandler) {
+      if (shuttingDown) sendJson(response, 503, { error: "not-ready" });
+      else {
+        try { await webhookHandler(request, response); }
+        catch { if (!response.headersSent) sendJson(response, 503, { error: "acceptance-unavailable" }); }
+      }
       return;
     }
 

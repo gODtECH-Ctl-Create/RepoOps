@@ -31,9 +31,9 @@ function normalizeAddress(address, config) {
  * GitHub Actions continues to use src/index.mjs; this runtime is intentionally
  * separate so hosted persistence/auth/webhook work can evolve independently.
  */
-export async function startControlPlane({ env = process.env, readinessChecks = [] } = {}) {
+export async function startControlPlane({ env = process.env, readinessChecks = [], webhookHandler = null } = {}) {
   const config = parseControlPlaneConfig(env);
-  const service = createControlPlaneServer({ readinessChecks });
+  const service = createControlPlaneServer({ readinessChecks, webhookHandler });
 
   service.server.requestTimeout = config.requestTimeoutMs;
   service.server.headersTimeout = Math.min(config.requestTimeoutMs, 60_000);

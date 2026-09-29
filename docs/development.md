@@ -31,7 +31,7 @@ npm run test:postgres
 
 The hosted GitHub App runtime is separate from the existing GitHub Actions entry point.
 
-Start the current control-plane skeleton locally with:
+Supply `REPOOPS_DATABASE_URL` and `REPOOPS_WEBHOOK_SECRET` securely, run `npm run db:migrate`, then start the hosted receiver with:
 
 ```bash
 npm run start:control-plane
@@ -46,7 +46,7 @@ REPOOPS_PORT=3000 \
 npm run start:control-plane
 ```
 
-The current service exposes only `GET /healthz` and `GET /readyz`. Do not place repository policy or GitHub mutations directly in HTTP handlers. PostgreSQL persistence and GitHub App authentication live behind dedicated adapters; future webhook and worker layers should use the same boundary pattern while preserving the deterministic core.
+The service exposes `GET /healthz`, `GET /readyz`, and `POST /webhooks/github`. Startup requires the inbox schema. Do not place repository policy or GitHub mutations directly in HTTP handlers. PostgreSQL persistence and GitHub App authentication live behind dedicated adapters; webhook and future worker layers should use the same boundary pattern while preserving the deterministic core.
 
 See [Hosted control plane](control-plane.md) for configuration, health, shutdown, PostgreSQL, authentication, and architecture boundaries.
 
@@ -205,3 +205,5 @@ or live_validation for a disposable issue and real reminder/retry checks. See
 Use `src/core/events.mjs` for validated event records. Tests should supply fixed
 UTC occurrence timestamps and trusted source identities, cover replay conflicts,
 and reject raw payload/secret metadata. See [schema version 1](events.md).
+
+HTTP tests exercise real loopback sockets with controlled persistence. The PostgreSQL integration suite additionally checks HTTP acceptance, server restart, later/concurrent redelivery, conflicting payloads, ambiguous responses, and database rejection. Without `REPOOPS_TEST_DATABASE_URL`, database tests are explicitly skipped; a local pass alone is not integration evidence.

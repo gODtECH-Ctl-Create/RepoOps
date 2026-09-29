@@ -219,3 +219,5 @@ The inbox does not replace:
 - GitHub API retry classification (`src/github/retry.mjs`).
 
 These are separate layers. Delivery deduplication prevents accepting the same GitHub delivery as new work twice; inbox state makes accepted work recoverable; operation receipts prevent repeated GitHub mutations when work itself is retried.
+
+HTTP receipt at `POST /webhooks/github` now inserts authenticated records atomically. Matching redeliveries may arrive at a different time: receipt time does not participate in duplicate comparison, and the first persisted receipt time is preserved. CAS continues to protect immutable receipt fields.

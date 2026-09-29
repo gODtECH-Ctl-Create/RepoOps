@@ -153,6 +153,7 @@ Implemented foundations:
 - versioned durable-inbox processing state, worker leases, retry/reconciliation states, recovery classes, and storage adapter contract
 - hosted control-plane process boundary with validated runtime configuration, health/readiness, and graceful shutdown
 - PostgreSQL migration runner with checksum-protected history and serialized migration application
+- Production webhook HTTP endpoint with raw-body authentication, bounded receipt, durable acceptance, mandatory database readiness and shutdown composition
 - PostgreSQL durable webhook inbox persistence with atomic record+payload acceptance, uniqueness, compare-and-swap, indexed recovery queries, and payload-integrity verification
 - PostgreSQL-backed CI integration coverage for migrations, duplicate deliveries, stale writers, recovery scans, payload tampering, constraints, and installation/repository scoping
 - GitHub App RS256 identity/JWT generation with isolated private-key configuration
@@ -164,7 +165,6 @@ See [GitHub App reliability architecture](github-app-reliability.md), [webhook i
 Still required for the hosted control plane:
 
 - register/configure the actual RepoOps GitHub App and deployment secrets
-- production webhook HTTP endpoint wired to verified ingress and PostgreSQL durable acceptance
 - durable job queue and workers
 - persistent retry scheduler
 - failed-delivery redelivery/recovery worker
@@ -178,7 +178,7 @@ Still required for the hosted control plane:
 
 The foundations above do **not** mean a hosted/installable GitHub App exists yet. GitHub Actions remains the current repository-mutation runtime until an explicit App cutover milestone moves selected operations to hosted workers.
 
-The next critical-path milestone after App authentication is the production webhook endpoint that verifies, normalizes, and durably accepts authenticated deliveries before acknowledging GitHub.
+The production webhook endpoint now verifies, normalizes, and durably accepts authenticated deliveries before acknowledging GitHub. Next: queue/hosted workers, then retry/reconciliation/redelivery, hosted operations cutover, installation lifecycle, and onboarding/Doctor, in that order. Each milestone must merge and finish RepoOps issue cleanup before the next begins.
 
 ## Stage 7 — Dashboard and analytics
 

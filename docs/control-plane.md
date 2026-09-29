@@ -2,7 +2,7 @@
 
 RepoOps has a hosted runtime boundary under `src/control-plane/` for the future GitHub App control plane. It is separate from the existing GitHub Actions entry point in `src/index.mjs`.
 
-The hosted runtime currently provides process lifecycle, health/readiness, PostgreSQL persistence for the durable webhook inbox, and a dedicated GitHub App identity/installation-token boundary. It still contains no production webhook endpoint, worker execution, or repository mutations.
+The hosted runtime currently provides process lifecycle, health/readiness, PostgreSQL persistence for the durable webhook inbox, and a dedicated GitHub App identity/installation-token boundary. It now accepts authenticated repository-operation webhooks durably at `POST /webhooks/github`. Worker execution and repository mutations remain pending.
 
 ## Current hosted foundations
 
@@ -52,6 +52,8 @@ GitHub remains the source of truth for issues, pull requests, reviews, branches,
 
 ```bash
 npm install
+# Supply REPOOPS_DATABASE_URL and REPOOPS_WEBHOOK_SECRET securely.
+npm run db:migrate
 npm run start:control-plane
 ```
 
@@ -183,7 +185,7 @@ Terminal payload bytes may be removed later according to the retention policy; n
 
 `createPostgresReadinessCheck(pool)` provides a minimal `SELECT 1` readiness function that can be injected into the existing `/readyz` dependency checks.
 
-The current executable control-plane entry point does **not** automatically require PostgreSQL yet because no hosted webhook/worker route consumes it. The webhook-ingress composition milestone should make PostgreSQL readiness mandatory at the same time it makes durable acceptance part of request handling.
+The executable starts through `startHostedControlPlane`: webhook secret and database configuration are mandatory. Startup and `/readyz` resolve required inbox columns; absent migrations or database failure fail closed. Migrations remain an explicit deployment step. The low-level `startControlPlane` remains an injectable HTTP lifecycle primitive for tests.
 
 ## Health endpoints
 
@@ -232,6 +234,8 @@ allow current HTTP work to drain
   ↓
 force-close remaining connections after bounded timeout
   ↓
+close PostgreSQL pool after HTTP drain
+  ↓
 process can exit
 ```
 
@@ -253,7 +257,6 @@ Future workers must join this lifecycle before they are introduced: stop leasing
 ## Not implemented yet
 
 - registration/configuration of the real RepoOps GitHub App in GitHub
-- production webhook HTTP ingress
 - durable queue/workers
 - retry/redelivery/reconciliation workers
 - repository mutations from the hosted runtime
@@ -262,3 +265,19 @@ Future workers must join this lifecycle before they are introduced: stop leasing
 - production PostgreSQL provisioning/backups
 
 Those are follow-up control-plane milestones and should consume these process, persistence, and authentication boundaries rather than expanding the HTTP server, database adapter, or credential manager into a monolithic application.
+
+## Production webhook receipt
+
+Configure GitHub's webhook URL as `https://<host>/webhooks/github`, JSON content type, SSL verification enabled, and a high-entropy shared secret supplied through `REPOOPS_WEBHOOK_SECRET`. Terminate TLS at the trusted ingress proxy; preserve exact request bytes and signature headers. Apply ingress connection/rate limits and the same 25 MiB body limit. No App private key is needed for receipt alone.
+
+Supported events in this milestone are `issue_comment`, `issues`, and `pull_request`; all actions with a valid envelope are stored for later policy evaluation. Other events, including installation and ping, currently receive 400; installation/onboarding event support is a subsequent milestone. This endpoint alone is not the installable alpha.
+
+The route verifies HMAC before UTF-8/JSON parsing, creates the existing core inbox record, and awaits PostgreSQL atomic insertion. It returns 202 only after insertion or confirmed matching duplicate acceptance. Original payload and first receipt time remain unchanged on redelivery. Different metadata or payload under the same GUID returns 409. Receipt performs no GitHub mutations and accepted records remain RECEIVED until workers are implemented.
+
+Responses: 401 invalid signature; 400 malformed/unsupported envelope; 405 wrong method; 413 body exceeds 25 MiB; 415 non-JSON/compressed payload; 503 unavailable or timed-out acceptance. Errors contain no raw payloads, secrets or database messages. Duplicate envelope/signature headers fail closed.
+
+An 8-second route deadline covers body reception and storage. PostgreSQL pool connection, statement and client query limits are 2, 5 and 6 seconds respectively. A response timeout is an ambiguous outcome: the insert may still commit, so a later redelivery must use the same GUID. GitHub does not automatically retry failed deliveries; operator redelivery is necessary until milestone 3 recovery exists. Readiness failure never turns durable acceptance into an optimistic 2XX.
+
+Graceful shutdown rejects new webhook work, drains active HTTP requests, and then closes the database pool. Forced disconnects can leave committed records without a response; the same deduplication rule applies.
+
+Verified GitHub contracts (2026-09-29): [signature validation](https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries), [10-second response guidance](https://docs.github.com/en/webhooks/using-webhooks/best-practices-for-using-webhooks), and [failed-delivery handling](https://docs.github.com/en/webhooks/using-webhooks/handling-failed-webhook-deliveries).

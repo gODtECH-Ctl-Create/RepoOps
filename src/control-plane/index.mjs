@@ -1,11 +1,8 @@
-import { installGracefulShutdown, startControlPlane } from "./runtime.mjs";
-
-function safeMessage(error) {
-  return error instanceof Error && error.message ? error.message : "unknown error";
-}
+import { installGracefulShutdown } from "./runtime.mjs";
+import { startHostedControlPlane } from "./hosted.mjs";
 
 try {
-  const runtime = await startControlPlane();
+  const runtime = await startHostedControlPlane();
 
   console.log(
     `RepoOps control plane listening on ${runtime.address.address}:${runtime.address.port} (${runtime.config.environment})`
@@ -13,12 +10,12 @@ try {
 
   installGracefulShutdown({
     runtime,
-    onError(error, signal) {
-      console.error(`RepoOps control plane shutdown failed after ${signal}: ${safeMessage(error)}`);
+    onError(_error, signal) {
+      console.error(`RepoOps control plane shutdown failed after ${signal}`);
       process.exitCode = 1;
     }
   });
-} catch (error) {
-  console.error(`RepoOps control plane failed to start: ${safeMessage(error)}`);
+} catch {
+  console.error("RepoOps control plane failed to start; check configuration, database and migrations");
   process.exitCode = 1;
 }
