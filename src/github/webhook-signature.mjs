@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-const SIGNATURE_PATTERN = /^sha256=([a-f0-9]{64})$/i;
+const SIGNATURE_PATTERN = /^sha256=([a-fA-F0-9]{64})$/;
 
 export class WebhookSignatureConfigurationError extends Error {
   constructor() {
