@@ -161,6 +161,16 @@ export class GitHubClient {
     });
   }
 
+  async updateIssue(issueNumber, { body } = {}) {
+    if (!Number.isSafeInteger(issueNumber) || issueNumber < 1 || typeof body !== "string") {
+      throw new Error("Invalid issue update");
+    }
+    return this.request("/repos/" + this.repository + "/issues/" + issueNumber, {
+      method: "PATCH",
+      body: JSON.stringify({ body })
+    });
+  }
+
   async ensureLabel(name, color = "1d76db", description = "Managed by RepoOps") {
     const encoded = encodeURIComponent(name);
     const lookup = await this.fetchResponse(`${apiBase}/repos/${this.repository}/labels/${encoded}`, {
