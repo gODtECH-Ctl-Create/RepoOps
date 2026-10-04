@@ -90,7 +90,7 @@ export function buildContributorDiary({ repository, active = [], completed = [] 
       lines.push("| " + cleanText(item.contributors.join(", ")) + " | [#" + item.number + "](https://github.com/" + ownerRepo + "/issues/" + item.number + ") | " + cleanText(item.title) + " |");
     }
   } else {
-    lines.push("_No RepoOps-managed work is currently marked in progress._");
+    lines.push("_No issues are currently marked in progress._");
   }
 
   lines.push("", "## Recently completed", "");
