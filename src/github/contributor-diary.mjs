@@ -1,6 +1,12 @@
 import { collectContributionProjection } from "./contribution-history.mjs";
 import { buildContributorDiary, contributorDiaryMarker } from "../core/contributor-diary.mjs";
 
+function isConfiguredContributorDiaryIssue(config, issueNumber) {
+  return config?.contributorDiary?.enabled === true &&
+    Number.isSafeInteger(config.contributorDiary.issueNumber) &&
+    config.contributorDiary.issueNumber === issueNumber;
+}
+
 export async function collectActiveContributorWork(client, config) {
   const issues = await client.paginate(
     "/repos/" + client.repository + "/issues?state=open&labels=" + encodeURIComponent(config.labels.inProgress) + "&sort=updated&direction=desc"
@@ -8,6 +14,7 @@ export async function collectActiveContributorWork(client, config) {
 
   return issues
     .filter((issue) => issue && !issue.pull_request && issue.state === "open")
+    .filter((issue) => !isConfiguredContributorDiaryIssue(config, issue.number))
     .map((issue) => ({
       number: issue.number,
       title: issue.title,
@@ -25,7 +32,11 @@ export async function collectContributorDiarySnapshot(client, config) {
     collectContributionProjection(client)
   ]);
 
-  const recent = history.projection.completed.slice(-12).reverse();
+  const recent = history.projection.completed
+    .filter((record) => !isConfiguredContributorDiaryIssue(config, record.issue.number))
+    .slice(-12)
+    .reverse();
+
   const completed = await Promise.all(recent.map(async (record) => {
     const contributor = history.contributorLogins.get(record.contributorId);
     if (!contributor) return null;
