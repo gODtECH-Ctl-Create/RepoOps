@@ -148,14 +148,14 @@ export async function handlePullRequestLifecycle(event, client, config) {
   return results;
 }
 
-function shouldRefreshContributorDiary(event, eventName) {
+function shouldRefreshContributorDiary(event, eventName, config) {
   if (eventName === "schedule" || eventName === "workflow_dispatch") return true;
   if (eventName === "issue_comment") return false;
   if (eventName === "issues") {
     if (event.issue?.pull_request) return false;
     if (["assigned", "unassigned", "closed", "reopened"].includes(event.action)) return true;
     if (event.action === "labeled" || event.action === "unlabeled") {
-      return event.label?.name === "status: in-progress";
+      return event.label?.name === config.labels.inProgress;
     }
     return false;
   }
@@ -184,7 +184,7 @@ export async function runRepoOps(event, { token, repository } = {}) {
 
   if (eventName === "pull_request_target" || eventName === "pull_request") {
     const result = await handlePullRequestLifecycle(event, client, config);
-    if (shouldRefreshContributorDiary(event, eventName)) await refreshDiaryWhenConfigured(client, config);
+    if (shouldRefreshContributorDiary(event, eventName, config)) await refreshDiaryWhenConfigured(client, config);
     return result;
   }
 
