@@ -171,6 +171,14 @@ export class GitHubClient {
     });
   }
 
+  async reopenIssue(issueNumber) {
+    if (!Number.isSafeInteger(issueNumber) || issueNumber < 1) throw new Error("Invalid issue reopen");
+    return this.request("/repos/" + this.repository + "/issues/" + issueNumber, {
+      method: "PATCH",
+      body: JSON.stringify({ state: "open", state_reason: "reopened" })
+    });
+  }
+
   async ensureLabel(name, color = "1d76db", description = "Managed by RepoOps") {
     const encoded = encodeURIComponent(name);
     const lookup = await this.fetchResponse(`${apiBase}/repos/${this.repository}/labels/${encoded}`, {
