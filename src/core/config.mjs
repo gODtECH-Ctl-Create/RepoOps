@@ -86,7 +86,8 @@ export function parseRepoOpsConfig(text = "") {
     labels: { ...DEFAULT_CONFIG.labels },
     assignments: { ...DEFAULT_CONFIG.assignments },
     contributorLimits: { ...DEFAULT_CONFIG.contributorLimits },
-    contributorGuidance: { ...DEFAULT_CONFIG.contributorGuidance }
+    contributorGuidance: { ...DEFAULT_CONFIG.contributorGuidance },
+    contributorDiary: { ...DEFAULT_CONFIG.contributorDiary }
   };
 
   let section = null;
