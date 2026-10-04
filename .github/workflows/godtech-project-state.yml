@@ -1,0 +1,9 @@
+name: gODtECH Project State
+
+on:
+  pull_request:
+  push:
+
+jobs:
+  project-state:
+    uses: gODtECH-Ctl-Create/Cockpit/.github/workflows/project-state.yml@main
