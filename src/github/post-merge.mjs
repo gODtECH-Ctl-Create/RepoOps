@@ -57,9 +57,25 @@ function hasOwnMarker(client, comments, marker) {
   return comments.some((comment) => client.isOwnComment(comment) && typeof comment.body === "string" && comment.body.includes(marker));
 }
 
+function isConfiguredContributorDiaryIssue(config, issueNumber) {
+  return config?.contributorDiary?.enabled === true &&
+    Number.isSafeInteger(config.contributorDiary.issueNumber) &&
+    config.contributorDiary.issueNumber === issueNumber;
+}
+
 export async function postMergeFollowUpForIssue({ client, config, issueNumber, pullRequestNumber }) {
   if (!Number.isSafeInteger(issueNumber) || issueNumber < 1 || (pullRequestNumber !== undefined && (!Number.isSafeInteger(pullRequestNumber) || pullRequestNumber < 1))) throw new Error("Invalid post-merge target");
   const issue = await client.getIssue(issueNumber);
+
+  if (isConfiguredContributorDiaryIssue(config, issueNumber)) {
+    if (issue.pull_request) return { type: "skip", reason: "contributor-diary-is-not-an-issue" };
+    if (issue.state === "closed") {
+      await client.reopenIssue(issueNumber);
+      return { type: "skip", reason: "contributor-diary-reopened", issueNumber };
+    }
+    return { type: "skip", reason: "contributor-diary", issueNumber };
+  }
+
   if (issue.pull_request || issue.state !== "closed") return { type: "skip", reason: "issue-not-complete" };
 
   const linked = await findLinkedPullRequests(client, issueNumber);
