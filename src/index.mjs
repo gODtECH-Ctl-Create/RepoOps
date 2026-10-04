@@ -12,6 +12,7 @@ import { listManagedActiveAssignments } from "./github/active-work.mjs";
 import { findClosingIssuesForPullRequest } from "./github/closing-issues.mjs";
 import { commentOperationStore, issueMutationSteps } from "./github/operations.mjs";
 import { postMergeFollowUpForIssue } from "./github/post-merge.mjs";
+import { refreshContributorDiary } from "./github/contributor-diary.mjs";
 import { GitHubClient } from "./github/client.mjs";
 
 async function readEvent() {
@@ -147,6 +148,23 @@ export async function handlePullRequestLifecycle(event, client, config) {
   return results;
 }
 
+function shouldRefreshContributorDiary(event, eventName) {
+  if (eventName === "schedule" || eventName === "workflow_dispatch") return true;
+  if (eventName === "issue_comment") return false;
+  if (eventName === "issues") {
+    return !event.issue?.pull_request &&
+      ["assigned", "unassigned", "closed", "reopened", "labeled", "unlabeled"].includes(event.action);
+  }
+  return (eventName === "pull_request_target" || eventName === "pull_request") &&
+    event.action === "closed" &&
+    event.pull_request?.merged === true;
+}
+
+async function refreshDiaryWhenConfigured(client, config) {
+  if (!config.contributorDiary.enabled) return null;
+  return refreshContributorDiary({ client, config });
+}
+
 export async function runRepoOps(event, { token, repository } = {}) {
   const config = await loadRepoOpsConfig();
   const eventName = eventNameFor(event);
@@ -156,17 +174,30 @@ export async function runRepoOps(event, { token, repository } = {}) {
     repository: repository ?? process.env.GITHUB_REPOSITORY
   });
 
-  if (eventName === "pull_request_target" || eventName === "pull_request") return handlePullRequestLifecycle(event, client, config);
-  if (!event.issue?.number) {
-    console.log("RepoOps: no issue found in event; nothing to do.");
-    return;
+  if (eventName === "schedule" || eventName === "workflow_dispatch") {
+    return refreshDiaryWhenConfigured(client, config);
   }
-  if (eventName === "issue_comment") return handleIssueComment(event, client, config);
-  if (eventName === "issues") return handleIssueLifecycle(event, client, config);
 
-  console.log(`RepoOps: unsupported event ${eventName}; nothing to do.`);
+  if (eventName === "pull_request_target" || eventName === "pull_request") {
+    const result = await handlePullRequestLifecycle(event, client, config);
+    if (shouldRefreshContributorDiary(event, eventName)) await refreshDiaryWhenConfigured(client, config);
+    return result;
+  }
+
+  if (eventName === "issue_comment") {
+    const result = await handleIssueComment(event, client, config);
+    if (routeCommand(event.comment?.body ?? "", config).type === "command") await refreshDiaryWhenConfigured(client, config);
+    return result;
+  }
+
+  if (eventName === "issues") {
+    const result = await handleIssueLifecycle(event, client, config);
+    if (shouldRefreshContributorDiary(event, eventName)) await refreshDiaryWhenConfigured(client, config);
+    return result;
+  }
+
+  console.log("RepoOps: unsupported event " + eventName + "; nothing to do.");
 }
-
 async function main() {
   await runRepoOps(await readEvent());
 }
