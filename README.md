@@ -64,6 +64,7 @@ GitHub already gives maintainers issues, pull requests, checks, reviews, and aut
 | ✅ | [**All ready issues**](https://github.com/gODtECH-Ctl-Create/RepoOps/issues?q=is%3Aissue+is%3Aopen+label%3A%22status%3A+ready%22+no%3Aassignee+-label%3A%22status%3A+blocked%22) | Claimable work across difficulty levels |
 | 🤝 | [**Help wanted**](https://github.com/gODtECH-Ctl-Create/RepoOps/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) | Open work where additional contribution is welcome |
 | 👥 | [**Live contributors**](https://godtech-ctl-create.github.io/RepoOps/#contributors) | Public repository contribution activity without contributor ranking |
+| 📘 | [**Contributor Diary**](https://github.com/gODtECH-Ctl-Create/RepoOps/issues/102) | Current work + recent completed contribution projection |
 | 🧩 | [**Reusable Action**](docs/reusable-action.md) | Add RepoOps to another repository without copying its runtime |
 
 ## 🧠 How RepoOps works
@@ -101,6 +102,7 @@ The architecture keeps event parsing, decisions, and GitHub mutations separate s
 | Linked pull-request detection | ✅ Implemented |
 | Post-merge contributor acknowledgement/follow-up | ✅ Implemented |
 | Completed-contribution history projection | ✅ Implemented — in-process projection, not persistent analytics |
+| Contributor Diary Issue projection | ✅ Implemented — active work + recent completion view |
 | Pull-request review/author timing helper | ✅ Implemented — foundation only; review queue/classifier remain roadmap |
 | Versioned operational event contract | ✅ Implemented — persistent event storage/audit emission remain roadmap |
 | Strict `.repoops.yml` validation | ✅ Implemented |
@@ -139,6 +141,10 @@ commands:
 labels:
   inProgress: "status: in-progress"
   ready: "status: ready"
+
+contributorDiary:
+  enabled: true
+  issueNumber: 102
 
 assignments:
   reminderAfterDays: 3
