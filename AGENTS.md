@@ -373,3 +373,10 @@ It is complete only when:
 - the final diff contains no unrelated or unexplained changes.
 
 When in doubt, choose the smaller, safer, easier-to-audit change.
+
+
+## gODtECH Cockpit State Synchronization
+
+This repository participates in the gODtECH Cockpit project graph.
+
+After meaningful work, reconcile `.godtech/project.yml` with evidence. Update state, priority, current focus, next step, blockers, status note and last worked date only when warranted. Never fabricate progress. Preserve RepoOps-specific governance and security rules.
