@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 
 import { parseRepoOpsConfig } from "../src/core/config.mjs";
 import { buildContributorDiary, contributorDiaryMarker } from "../src/core/contributor-diary.mjs";
-import { refreshContributorDiary } from "../src/github/contributor-diary.mjs";
+import { collectActiveContributorWork, refreshContributorDiary } from "../src/github/contributor-diary.mjs";
 
 function fakeClient(body = contributorDiaryMarker()) {
   const client = {
@@ -100,4 +100,28 @@ test("closed diary issue is not mutated", async () => {
 
   assert.equal(result.type, "skip");
   assert.equal(client.calls.length, 0);
+});
+
+
+test("active diary snapshot excludes the configured diary issue", async () => {
+  const client = {
+    repository: "owner/repo",
+    async paginate() {
+      return [
+        { number: 102, title: "Contributor Diary", state: "open", pull_request: null, assignees: [{ login: "alice" }] },
+        { number: 7, title: "Real task", state: "open", pull_request: null, assignees: [{ login: "bob" }] }
+      ];
+    }
+  };
+
+  const result = await collectActiveContributorWork(client, {
+    labels: { inProgress: "status: in-progress" },
+    contributorDiary: { enabled: true, issueNumber: 102 }
+  });
+
+  assert.deepEqual(result, [{
+    number: 7,
+    title: "Real task",
+    contributors: ["bob"]
+  }]);
 });

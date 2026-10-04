@@ -152,3 +152,39 @@ test("retry repairs a missing PR acknowledgment without duplicating the existing
   assert.equal(commentsByNumber.get(70).length, 1);
   assert.match(commentsByNumber.get(70)[0].body, /first contribution has been merged/i);
 });
+
+test("configured contributor diary issue is preserved as an open projection", async () => {
+  let reopened = false;
+  const client = {
+    repository: "owner/repo",
+    getIssue: async () => ({
+      id: 999,
+      number: 9,
+      state: "closed",
+      pull_request: null,
+      assignees: [],
+      labels: []
+    }),
+    reopenIssue: async () => {
+      reopened = true;
+      return { state: "open" };
+    }
+  };
+
+  const config = structuredClone(DEFAULT_CONFIG);
+  config.contributorDiary = { enabled: true, issueNumber: 9 };
+
+  const result = await postMergeFollowUpForIssue({
+    client,
+    config,
+    issueNumber: 9,
+    pullRequestNumber: 70
+  });
+
+  assert.deepEqual(result, {
+    type: "skip",
+    reason: "contributor-diary-reopened",
+    issueNumber: 9
+  });
+  assert.equal(reopened, true);
+});
