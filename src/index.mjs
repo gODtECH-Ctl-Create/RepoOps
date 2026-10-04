@@ -194,7 +194,7 @@ export async function runRepoOps(event, { token, repository } = {}) {
 
   if (eventName === "issues") {
     const result = await handleIssueLifecycle(event, client, config);
-    if (shouldRefreshContributorDiary(event, eventName)) await refreshDiaryWhenConfigured(client, config);
+    if (shouldRefreshContributorDiary(event, eventName, config)) await refreshDiaryWhenConfigured(client, config);
     return result;
   }
 
