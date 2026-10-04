@@ -152,8 +152,12 @@ function shouldRefreshContributorDiary(event, eventName) {
   if (eventName === "schedule" || eventName === "workflow_dispatch") return true;
   if (eventName === "issue_comment") return false;
   if (eventName === "issues") {
-    return !event.issue?.pull_request &&
-      ["assigned", "unassigned", "closed", "reopened", "labeled", "unlabeled"].includes(event.action);
+    if (event.issue?.pull_request) return false;
+    if (["assigned", "unassigned", "closed", "reopened"].includes(event.action)) return true;
+    if (event.action === "labeled" || event.action === "unlabeled") {
+      return event.label?.name === "status: in-progress";
+    }
+    return false;
   }
   return (eventName === "pull_request_target" || eventName === "pull_request") &&
     event.action === "closed" &&
@@ -185,9 +189,7 @@ export async function runRepoOps(event, { token, repository } = {}) {
   }
 
   if (eventName === "issue_comment") {
-    const result = await handleIssueComment(event, client, config);
-    if (routeCommand(event.comment?.body ?? "", config).type === "command") await refreshDiaryWhenConfigured(client, config);
-    return result;
+    return handleIssueComment(event, client, config);
   }
 
   if (eventName === "issues") {
