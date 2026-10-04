@@ -4,9 +4,12 @@ on:
   issue_comment:
     types: [created]
   issues:
-    types: [closed]
+    types: [closed, assigned, unassigned, reopened, labeled, unlabeled]
   pull_request_target:
     types: [closed]
+  schedule:
+    - cron: "17 9 * * *"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -17,6 +20,8 @@ jobs:
   handle:
     if: >-
       ${{
+        github.event_name == 'schedule' ||
+        github.event_name == 'workflow_dispatch' ||
         (github.event_name == 'pull_request_target' && github.event.pull_request.merged == true) ||
         (github.event_name == 'issues' && github.event.issue.pull_request == null) ||
         (github.event_name == 'issue_comment' && github.event.issue.pull_request == null && github.event.comment.user.type == 'User')

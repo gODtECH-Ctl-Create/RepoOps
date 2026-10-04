@@ -17,10 +17,14 @@ export const DEFAULT_CONFIG = Object.freeze({
     upgradeUrl: "",
     contributorHubUrl: "",
     roadmapUrl: ""
+  }),
+  contributorDiary: Object.freeze({
+    enabled: false,
+    issueNumber: 0
   })
 });
 
-const allowedSections = new Set(["commands", "labels", "assignments", "contributorLimits", "contributorGuidance"]);
+const allowedSections = new Set(["commands", "labels", "assignments", "contributorLimits", "contributorGuidance", "contributorDiary"]);
 const allowedKeys = {
   commands: new Set(["claim", "unclaim"]),
   labels: new Set(["inProgress", "ready"]),
@@ -38,7 +42,8 @@ const allowedKeys = {
     "upgradeUrl",
     "contributorHubUrl",
     "roadmapUrl"
-  ])
+  ]),
+  contributorDiary: new Set(["enabled", "issueNumber"])
 };
 
 function parseScalar(value, numeric = false) {
@@ -81,7 +86,8 @@ export function parseRepoOpsConfig(text = "") {
     labels: { ...DEFAULT_CONFIG.labels },
     assignments: { ...DEFAULT_CONFIG.assignments },
     contributorLimits: { ...DEFAULT_CONFIG.contributorLimits },
-    contributorGuidance: { ...DEFAULT_CONFIG.contributorGuidance }
+    contributorGuidance: { ...DEFAULT_CONFIG.contributorGuidance },
+    contributorDiary: { ...DEFAULT_CONFIG.contributorDiary }
   };
 
   let section = null;
@@ -119,7 +125,8 @@ export function parseRepoOpsConfig(text = "") {
     seen.add(path);
     const numeric =
       (section === "assignments" && key !== "autoRelease") ||
-      (section === "contributorLimits" && key === "maxActiveAssignments");
+      (section === "contributorLimits" && key === "maxActiveAssignments") ||
+      (section === "contributorDiary" && key === "issueNumber");
     result[section][key] = parseScalar(value, numeric);
   }
 
@@ -154,6 +161,16 @@ export function parseRepoOpsConfig(text = "") {
     validateGuidanceUrl(key, result.contributorGuidance[key]);
   }
 
+  if (typeof result.contributorDiary.enabled !== "boolean") {
+    throw new Error("contributorDiary.enabled must be true or false");
+  }
+  if (!Number.isSafeInteger(result.contributorDiary.issueNumber) || result.contributorDiary.issueNumber < 0 || result.contributorDiary.issueNumber > 100000000) {
+    throw new Error("contributorDiary.issueNumber must be an integer from 0 through 100000000");
+  }
+  if (result.contributorDiary.enabled && result.contributorDiary.issueNumber < 1) {
+    throw new Error("contributorDiary.issueNumber must be set when contributorDiary.enabled is true");
+  }
+
   return result;
 }
 
@@ -167,7 +184,8 @@ export async function loadRepoOpsConfig(path = ".repoops.yml") {
         labels: { ...DEFAULT_CONFIG.labels },
         assignments: { ...DEFAULT_CONFIG.assignments },
         contributorLimits: { ...DEFAULT_CONFIG.contributorLimits },
-        contributorGuidance: { ...DEFAULT_CONFIG.contributorGuidance }
+        contributorGuidance: { ...DEFAULT_CONFIG.contributorGuidance },
+        contributorDiary: { ...DEFAULT_CONFIG.contributorDiary }
       };
     }
     throw error;

@@ -50,6 +50,10 @@ test("parses valid RepoOps configuration", () => {
         upgradeUrl: "",
         contributorHubUrl: "",
         roadmapUrl: ""
+      },
+      contributorDiary: {
+        enabled: false,
+        issueNumber: 0
       }
     }
   );
