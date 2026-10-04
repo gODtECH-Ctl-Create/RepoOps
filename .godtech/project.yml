@@ -1,0 +1,9 @@
+project:
+  state: active
+  priority: high
+  current_focus: "Reusable repository-operations automation"
+  next_step: "Continue the reusable action and automatic version-update path"
+  blockers:
+    - []
+  status_note: "IssueOps and repository automation remain deterministic and human-governed."
+  last_worked_on: "2026-10-04"
