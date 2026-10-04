@@ -82,3 +82,18 @@ test("rejects unsafe or malformed contributor guidance", () => {
     "contributorGuidance:\n  unknown: \"value\""
   ]) assert.throws(() => parseRepoOpsConfig(text));
 });
+
+
+test("contributor diary defaults are disabled and invalid targets are rejected", () => {
+  assert.deepEqual(parseRepoOpsConfig("commands:\n  claim: true").contributorDiary, {
+    enabled: false,
+    issueNumber: 0
+  });
+  assert.deepEqual(parseRepoOpsConfig("contributorDiary:\n  enabled: true\n  issueNumber: 102").contributorDiary, {
+    enabled: true,
+    issueNumber: 102
+  });
+  assert.throws(() => parseRepoOpsConfig("contributorDiary:\n  enabled: true"));
+  assert.throws(() => parseRepoOpsConfig("contributorDiary:\n  issueNumber: 1.5"));
+  assert.throws(() => parseRepoOpsConfig("contributorDiary:\n  issueNumber: \"102\""));
+});
