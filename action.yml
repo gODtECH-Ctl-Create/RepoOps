@@ -40,4 +40,4 @@ runs:
           exit 1
         fi
 
-        node "${GITHUB_ACTION_PATH}/src/index.mjs"
+        node "${GITHUB_ACTION_PATH}/src/entrypoint.mjs"
