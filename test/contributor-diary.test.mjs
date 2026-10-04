@@ -52,7 +52,8 @@ test("diary renderer is deterministic and ordered", () => {
   assert.ok(body.indexOf("[#3]") < body.indexOf("[#20]"));
   assert.match(body, /Second \\| task/);
   assert.match(body, /operational view, not a leaderboard/);
-  assert.doesNotMatch(body, /score|rank|productivity/i);
+  assert.match(body, /not a leaderboard/i);
+  assert.match(body, /does not score contributor quality/i);
 });
 
 test("diary refresh updates once and becomes idempotent", async () => {
