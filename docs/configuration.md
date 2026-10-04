@@ -142,6 +142,24 @@ Safety rules:
 
 RepoOps itself configures Node.js 20+, `npm install`, `npm run check`, its contributor/development/architecture guides, and its structured problem/upgrade issue forms.
 
+## Contributor diary
+
+The optional Contributor Diary is a reserved GitHub Issue projection.
+
+contributorDiary:
+  enabled: true
+  issueNumber: 102
+
+The target Issue must be open, must be a normal Issue rather than a Pull Request, and must contain the RepoOps diary marker:
+
+<!-- repoops:contributor-diary:v1 -->
+
+When enabled, RepoOps refreshes the diary after assignment or unassignment, relevant Issue lifecycle changes, merged Pull Requests, and a daily scheduled run.
+
+The diary shows current in-progress work, recent completed RepoOps-managed contributions, and a neutral activity snapshot. It does not score or rank contributors.
+
+The diary is a projection, not a canonical datastore. GitHub remains authoritative. Future durable history belongs to Issue #87.
+
 ## Validation behavior
 
 RepoOps deliberately rejects unknown sections and unknown keys. This prevents misspelled policy from being silently ignored.
